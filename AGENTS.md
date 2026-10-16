@@ -16,6 +16,7 @@ Follow that handoff for detailed requirements, incident history, packaging const
 
 ## Current state
 
+- [v0.1.0](https://github.com/Devneya/tui/releases/tag/v0.1.0) is published from `44881132f1ec73eea05e3d86dc1e3011472a3627`. All four required Linux/macOS targets passed 29/29 scenarios in tag workflow `38966604548`; Windows failed native DLL qualification and was omitted.
 - The handoff records requirements and research. The implemented launcher, frozen runtime, native CI and release assembly are tracked in [IMPLEMENTATION_LEDGER.md](IMPLEMENTATION_LEDGER.md); use its exact receipts for qualification claims.
 - The selected pair is Chimney `@deepseek-harness-tui/dsh-tui@0.15.0` at `18e4a206afc367f055a2b3379bb221abcbb5d99e` and DSH `@deepseek-ai/dsh@0.2.0-rc.2` at `639ed015397290b3745d163aafe02ffee4aa3f84`. The DSH RC is explicitly accepted for this build and must not be described as stable.
 - The packaging contract is a Go executable containing a ZIP of ordinary Node and a frozen npm dependency tree. Build tools are Node `24.22.0`, npm `11.19.1`, Go `1.27.2`, and Python `3.14.4`.

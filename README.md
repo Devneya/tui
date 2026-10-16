@@ -1,8 +1,10 @@
 # devneya
 
-devneya is a self-contained terminal interface for DeepSeek Harness (DSH). The v0.1.0 implementation embeds an ordinary Node runtime and the frozen application dependencies inside one executable for each supported platform.
+devneya is a self-contained terminal interface for DeepSeek Harness (DSH). The [v0.1.0 release](https://github.com/Devneya/tui/releases/tag/v0.1.0) embeds an ordinary Node runtime and the frozen application dependencies inside one executable for each supported platform.
 
-Each published platform archive includes checksums, a build manifest, an SBOM, license notices, and its finished-executable acceptance report.
+Linux and macOS x64/arm64 each passed all 29 mandatory finished-executable acceptance scenarios in the [release workflow](https://github.com/Devneya/tui/actions/runs/38966604548). Windows was omitted because native DLL qualification failed.
+
+Each published platform archive includes a build manifest, an SBOM, license notices, and its finished-executable acceptance report. The release also supplies `SHA256SUMS`, signed build provenance, and native-library corresponding sources.
 
 The selected build uses Chimney `@deepseek-harness-tui/dsh-tui@0.15.0` and DSH `@deepseek-ai/dsh@0.2.0-rc.2`. DSH RC.2 is a prerelease explicitly accepted for this build; it is not stable.
 
@@ -15,7 +17,7 @@ cd /path/to/project
 ./devneya
 ```
 
-On Windows, open a terminal in the project and run:
+For a qualified Windows preview build, when available, open a terminal in the project and run:
 
 ```powershell
 cd C:\path\to\project
@@ -88,7 +90,7 @@ The release matrix is below. Every published Linux/macOS executable must pass al
 
 Windows is currently unqualified. Its bundled LibreOffice helper has unresolved native runtime dependencies, including Visual C++ runtime DLLs. A Windows download is supplied only when the release notes explicitly report successful qualification.
 
-Linux and Windows executables are unsigned. macOS executables are ad-hoc signed and are not notarized. No paid signing is planned. Each release will state which targets passed acceptance and provide checksums and the exact bundled-version manifest.
+Linux and Windows executables are unsigned. macOS executables are ad-hoc signed and are not notarized. No paid signing is planned. Release notes state which targets passed acceptance; each platform archive records the exact bundled versions.
 
 ## Licenses and corresponding sources
 

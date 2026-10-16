@@ -1,7 +1,7 @@
 # devneya v0.1.0 packaging contract
 
 **Updated:** 2026-10-16
-**Status:** Implemented packaging contract. Exact qualification runs and release status are recorded in [IMPLEMENTATION_LEDGER.md](IMPLEMENTATION_LEDGER.md); acceptance receipts remain the release gate.
+**Status:** [v0.1.0 is published](https://github.com/Devneya/tui/releases/tag/v0.1.0) from `44881132f1ec73eea05e3d86dc1e3011472a3627`. All four required Linux/macOS targets passed 29/29 scenarios; Windows was omitted after native DLL qualification failed. Exact runs and asset verification are recorded in [IMPLEMENTATION_LEDGER.md](IMPLEMENTATION_LEDGER.md).
 
 ## Source pair and toolchain
 
@@ -12,7 +12,7 @@
 
 The selected DSH version is an explicitly accepted release candidate. It is not stable. Do not replace it with an alpha or describe it as a stable release. A future upstream change requires a separately reviewed and qualified compatibility set.
 
-Pinned build tools: Node `24.22.0`, npm `11.19.1`, Go `1.27.2`, and Python `3.14.4`. Use a committed npm lockfile and frozen dependency installation. Record each input's source revision or digest and each output's SHA-256 in the generated release manifest. Do not edit `build.json` as part of documentation work; it is the separate implementation ledger.
+Pinned build tools: Node `24.22.0`, npm `11.19.1`, Go `1.27.2`, and Python `3.14.4`. Use a committed npm lockfile and frozen dependency installation. Record each input's source revision or digest and each output's SHA-256 in the generated release manifest. `build.json` is the build configuration; qualification evidence belongs in the implementation ledger.
 
 ## Executable format
 
