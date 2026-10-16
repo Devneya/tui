@@ -1,6 +1,6 @@
 # Implementation ledger — devneya 0.1.0
 
-Release status: **prepublication; four native suites reported 29/29 at c78a8cc8; final process-inventory and publication checks are being qualified; no release tag created**. Required scenarios remain gates even when the local environment cannot run them. Raw logs belong in ignored `artifacts/implementation/`.
+Release status: **draft only; no assets published**. Four native tag-build suites passed at `b0fe8cc0`; the draft-lookup correction is undergoing fresh qualification before the unpublished tag is retried. Required scenarios remain gates. Raw logs belong in ignored `artifacts/implementation/`.
 
 ## Unit 1 — reconcile decisions (in progress)
 
