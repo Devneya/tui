@@ -16,6 +16,8 @@ assert all(re.fullmatch('[0-9a-f]{64}',x) for x in json.loads((ROOT/'node-checks
 assert not any(k in p['overrides'] for k in ['resolve.exports'])
 assert json.loads((ROOT/'tests/package.json').read_text())['dependencies']['node-pty']=='1.1.0'
 assert all(re.fullmatch('[0-9a-f]{40}', b[k]) for k in ['dshSource','tuiSource'])
+assert set(b['linuxAcceptanceImages'])=={'linux-x64','linux-arm64'}
+assert all(re.fullmatch(r'docker.io/library/ubuntu@sha256:[0-9a-f]{64}',image) for image in b['linuxAcceptanceImages'].values())
 from source_bundle import entries
 entries(json.loads((ROOT/'third_party/native-sources.json').read_text()))
 for record in json.loads((ROOT/'third_party/origins.json').read_text())['files']:

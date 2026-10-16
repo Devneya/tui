@@ -39,5 +39,8 @@
       "required": false
     }
   },
-  "linuxAcceptanceImage": "docker.io/library/ubuntu@sha256:08ea48a03a3e78ebc7cd526e6a275053223aadd88bfc09cc49b06d5281525fde"
+  "linuxAcceptanceImages": {
+    "linux-x64": "docker.io/library/ubuntu@sha256:08ea48a03a3e78ebc7cd526e6a275053223aadd88bfc09cc49b06d5281525fde",
+    "linux-arm64": "docker.io/library/ubuntu@sha256:30dfd7fe96f97c5f5ddf388ce8d098aa509644ad68fdef67244fb71b8169ffcb"
+  }
 }

@@ -98,7 +98,7 @@ try{
   if(process.platform==='linux'){
    container=process.env.DEVNEYA_CONTAINER_ENGINE||'/usr/bin/docker';
    try{
-    t=new Terminal(container,['run','--rm','--name',name,'--network','none','--user','1000:1000','-it','--workdir','/tmp','-e','HOME=/tmp/test-home','-e','DEVNEYA_HOME=/tmp/devneya','-e','LANG=zh_CN.UTF-8','-v',directory+':/candidate:ro',config.linuxAcceptanceImage,'/candidate/devneya'],{cwd:workspace,env:process.env});
+    t=new Terminal(container,['run','--rm','--name',name,'--network','none','--user','1000:1000','-it','--workdir','/tmp','-e','HOME=/tmp/test-home','-e','DEVNEYA_HOME=/tmp/devneya','-e','LANG=zh_CN.UTF-8','-v',directory+':/candidate:ro',config.linuxAcceptanceImages[target],'/candidate/devneya'],{cwd:workspace,env:process.env});
     await t.ready(true);assert.match(t.text,/Welcome to dsh-TUI|Say something/);t.write('/provider');await delay(250);t.write('\r');await t.until(/What do you want to do/);return 'Fresh non-root Ubuntu 22.04 container reached English provider UI in its own disabled-network namespace; no Node or package manager installed';
    }finally{if(t)await t.close();await execute(container,['rm','--force',name]).catch(()=>{});}
   }else if(process.platform==='darwin'){
