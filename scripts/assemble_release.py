@@ -4,6 +4,7 @@ from pathlib import Path
 from release_common import CONFIG,ROOT,sha,read_archive,validate_receipt,validate_source_bundle
 source=os.environ['RELEASE_SOURCE'];tag=os.environ['RELEASE_TAG'];assert tag=='v'+CONFIG['version']
 windows=json.loads((ROOT/'windows-qualification/qualification.json').read_text())
+assert windows['schemaVersion']==1 and windows['target']=='windows-x64' and windows['sourceCommit']==source,'Windows report source differs'
 win_ok=os.environ.get('WINDOWS_QUALIFIED')=='true'
 assert windows['qualified'] is win_ok,'Windows explicit output and qualification receipt differ'
 required={k for k,v in CONFIG['targets'].items() if v['required']};targets=required|({'windows-x64'} if win_ok else set())

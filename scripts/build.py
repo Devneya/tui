@@ -193,7 +193,7 @@ def main():
     shutil.copyfile(REPO / 'runtime/entry.mjs', stage / 'app/entry.mjs')
     shutil.copyfile(node, stage / 'bin' / node.name)
     os.chmod(stage / 'bin' / node.name, 0o755)
-    (stage / 'bin/dsh').write_text('#!/bin/sh\nDEVNEYA_BIN_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)\nexec "$DEVNEYA_BIN_DIR/node" "$DEVNEYA_BIN_DIR/../app/node_modules/@deepseek-ai/dsh/lib/bin.js" "$@"\n')
+    (stage / 'bin/dsh').write_text('#!/bin/sh\nDEVNEYA_BIN_DIR=$(CDPATH= cd -- "${0%/*}" && pwd)\nexec "$DEVNEYA_BIN_DIR/node" "$DEVNEYA_BIN_DIR/../app/node_modules/@deepseek-ai/dsh/lib/bin.js" "$@"\n')
     os.chmod(stage / 'bin/dsh', 0o755)
     (stage / 'bin/dsh.cmd').write_bytes(b'@echo off\r\n"%~dp0node.exe" "%~dp0..\\app\\node_modules\\@deepseek-ai\\dsh\\lib\\bin.js" %*\r\n')
     legal = stage / 'legal'

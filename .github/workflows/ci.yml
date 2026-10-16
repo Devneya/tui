@@ -11,3 +11,43 @@ concurrency:
 jobs:
   qualification:
     uses: ./.github/workflows/build.yml
+  rehearsal:
+    needs: qualification
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.14.4'
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: accepted-*
+          path: release-input
+          merge-multiple: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: qualification-windows-x64
+          path: windows-qualification
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: native-sources
+          path: source-input
+      - name: Validate and assemble without publication
+        env:
+          RELEASE_TAG: v0.1.0
+          RELEASE_SOURCE: ${{ github.sha }}
+          WINDOWS_QUALIFIED: ${{ needs.qualification.outputs.windowsQualified }}
+        run: |
+          python3 scripts/assemble_release.py
+          python3 scripts/checksums.py release-assets
+          cat release-assets/SHA256SUMS
+          cat release-notes.md
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release-rehearsal
+          path: |
+            release-assets/SHA256SUMS
+            release-notes.md
+          if-no-files-found: error

@@ -4,7 +4,7 @@
 
 **Targets (selected, 2026-10-16):** Linux x64/arm64 on Ubuntu 22.04 with glibc 2.35; macOS x64/arm64 on macOS 15. Windows x64 on Windows Server 2025 is preview-only and may ship only after full qualification.
 
-**Status:** Implementation contract recorded; no claim that the standalone executable or acceptance suite is complete.
+**Status:** Product requirements and source research. Implementation, measured qualification and publication status are recorded in [IMPLEMENTATION_LEDGER.md](IMPLEMENTATION_LEDGER.md); this research record is not an acceptance receipt.
 **Selected TUI and DSH:** Chimney `@deepseek-harness-tui/dsh-tui@0.15.0` and DSH `@deepseek-ai/dsh@0.2.0-rc.2`; exact source revisions are recorded in section 4. DSH RC.2 is explicitly accepted for this build and is not a stable release.
 
 ## 0. Agreed version 1 scope — 2026-10-16

@@ -16,13 +16,13 @@ Follow that handoff for detailed requirements, incident history, packaging const
 
 ## Current state
 
-- The handoff records requirements and research; it does not establish a working standalone binary.
+- The handoff records requirements and research. The implemented launcher, frozen runtime, native CI and release assembly are tracked in [IMPLEMENTATION_LEDGER.md](IMPLEMENTATION_LEDGER.md); use its exact receipts for qualification claims.
 - The selected pair is Chimney `@deepseek-harness-tui/dsh-tui@0.15.0` at `18e4a206afc367f055a2b3379bb221abcbb5d99e` and DSH `@deepseek-ai/dsh@0.2.0-rc.2` at `639ed015397290b3745d163aafe02ffee4aa3f84`. The DSH RC is explicitly accepted for this build and must not be described as stable.
 - The packaging contract is a Go executable containing a ZIP of ordinary Node and a frozen npm dependency tree. Build tools are Node `24.22.0`, npm `11.19.1`, Go `1.27.2`, and Python `3.14.4`.
 - Required targets are Linux x64/arm64 on Ubuntu 22.04 with glibc 2.35, and macOS x64/arm64 on macOS 15. Windows x64 on Windows Server 2025 is preview-only and must pass qualification before distribution.
 - Build natively in GitHub Actions. Run the complete handoff acceptance suite before creating a `vSEMVER` release tag; release assets include binaries, checksums, version metadata, and license notices. macOS builds use ad-hoc signatures and are not notarized; no paid signing is planned.
-- The launcher and bootstrap implement `DEVNEYA_HOME` and the owned storage layout. A local Linux candidate passed all 29 acceptance scenarios; the four required native CI targets remain unqualified. See [IMPLEMENTATION_LEDGER.md](IMPLEMENTATION_LEDGER.md) for measured coverage.
-- No public release has been qualified or published yet. See [README.md](README.md) for implemented commands and storage behavior. Complete native CI and release assembly before creating a tag.
+- The launcher and bootstrap implement `DEVNEYA_HOME` and the owned storage layout. All 29 acceptance scenarios are required per distributed Linux/macOS target; compilation and version output alone do not qualify a build.
+- See [README.md](README.md) for commands, storage and platform boundaries. Complete native CI and the nonpublishing assembly rehearsal before creating a tag. Windows remains conditional; do not bypass its qualification failures.
 - [dsh_tui.sh](dsh_tui.sh) is an existing launch experiment using `npx`, `pnpm@10`, `dsh@latest`, and a `dsh-tui` profile. It does not establish a reproducible release or the self-contained product.
 
 ## Product constraints

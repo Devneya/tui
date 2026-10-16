@@ -2,13 +2,13 @@
 
 devneya is a self-contained terminal interface for DeepSeek Harness (DSH). The v0.1.0 implementation embeds an ordinary Node runtime and the frozen application dependencies inside one executable for each supported platform.
 
-**Release status:** a local Linux candidate passed all 29 acceptance scenarios. Both Linux targets passed native CI acceptance on Ubuntu 22.04; macOS remains unqualified. Windows is preview-only and unqualified. No public release is available yet.
+Each published platform archive includes checksums, a build manifest, an SBOM, license notices, and its finished-executable acceptance report.
 
 The selected build uses Chimney `@deepseek-harness-tui/dsh-tui@0.15.0` and DSH `@deepseek-ai/dsh@0.2.0-rc.2`. DSH RC.2 is a prerelease explicitly accepted for this build; it is not stable.
 
 ## Download and start
 
-When a qualified release is available, download the archive for your operating system and CPU, extract it, and run the executable from your project directory. The executable is named `devneya` on Linux and macOS, and `devneya.exe` on Windows.
+Download the archive for your operating system and CPU from [GitHub Releases](https://github.com/Devneya/tui/releases), extract it, and run the executable from your project directory. The executable is named `devneya` on Linux and macOS, and `devneya.exe` on Windows.
 
 ```sh
 cd /path/to/project
@@ -76,7 +76,17 @@ The bundled application runtime does not require system Node, Bun, DSH, npm, pnp
 
 ## Supported platforms and signing
 
-The intended required targets are Linux x64 and arm64 on Ubuntu 22.04 with glibc 2.35, and macOS x64 and arm64 on macOS 15. The Linux baselines passed all 29 native CI scenarios at source `adeabe610a254427b8b77e1fce377a75df347ead`; macOS qualification is pending. Windows x64 on Windows Server 2025 is preview-only and will be distributed only if the full acceptance suite passes on that target.
+The release matrix is below. Every published Linux/macOS executable must pass all 29 mandatory acceptance scenarios. The build manifest and acceptance report record the exact runner image and tested OS; compatibility with older OS versions is not inferred.
+
+| Target | Qualification baseline | Native CI environment |
+|---|---|---|
+| Linux x64 | Ubuntu 22.04; glibc 2.35 | `ubuntu-22.04` |
+| Linux arm64 | Ubuntu 22.04; glibc 2.35 | `ubuntu-22.04-arm` |
+| macOS arm64 | macOS 15 | `macos-15`; tested macOS 15.7.9 |
+| macOS x64 | macOS 15 | `macos-15-intel`; tested macOS 15.7.9 |
+| Windows x64 | Windows Server 2025; conditional preview | `windows-2025`; omitted unless fully qualified |
+
+Windows is currently unqualified. Its bundled LibreOffice helper has unresolved native runtime dependencies, including Visual C++ runtime DLLs. A Windows download is supplied only when the release notes explicitly report successful qualification.
 
 Linux and Windows executables are unsigned. macOS executables are ad-hoc signed and are not notarized. No paid signing is planned. Each release will state which targets passed acceptance and provide checksums and the exact bundled-version manifest.
 

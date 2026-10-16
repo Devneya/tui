@@ -9,11 +9,11 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 
 def apply(root: Path, diff_path: Path):
-    spec = json.loads((REPO / 'patches/integration.json').read_text())
+    spec = json.loads((REPO / 'patches/integration.json').read_text(encoding='utf-8'))
     pending = []
     for patch in spec['patches']:
         package = root / patch['package']
-        manifest = json.loads((package / 'package.json').read_text())
+        manifest = json.loads((package / 'package.json').read_text(encoding='utf-8'))
         if manifest['version'] != patch['version']:
             raise ValueError(f"Wrong source version: {patch['package']}")
         file = package / patch['path']

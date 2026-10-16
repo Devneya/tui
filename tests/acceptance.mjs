@@ -37,7 +37,7 @@ if(process.platform==='win32'){
  }
  env.PATH=[...new Set(allowed)].join(';');
 }else{
- for(const name of ['bash','sh','git','rg','ps','uname','env','printf','cat','pwd','true','false','sleep','echo']){
+ for(const name of ['bash','sh','git','rg','ps','uname','env','printf','cat','pwd','true','false','sleep','echo',...(process.platform==='darwin'?['sandbox-exec']:[])]){
   try{const {stdout}=await execute('/usr/bin/which',[name]);symlinkSync(stdout.trim(),join(toolbin,name));}catch(error){if(['bash','sh'].includes(name))throw error;}
  }
  env.PATH=toolbin;
@@ -52,9 +52,9 @@ function redact(text){return String(text).replaceAll(base,'<fixture>').replaceAl
 function saveReport(){report.passed=report.scenarios.length===Object.keys(spec).length+(target==='windows-x64'?1:0)&&report.scenarios.every(r=>r.pass);writeFileSync(join(directory,'acceptance-report.json'),JSON.stringify(report,null,2)+'\n');}
 async function hash(file){const sum=createHash('sha256');for await(const b of createReadStream(file))sum.update(b);return sum.digest('hex');}
 async function record(name,fn){
- const started=Date.now();let actual='';let passed=false;
+ const started=Date.now();const requestIndex=provider?.requests.length??0;let actual='';let passed=false;
  try{actual=await fn()||'Expected behavior observed against the finished executable';passed=true;}
- catch(error){actual=redact(error.message);failure??=error;writeFileSync(join(diagnostics,name+'-error.txt'),redact(error.stack));if(terminal)writeFileSync(join(diagnostics,name+'.txt'),redact(terminal.screen.text()));}
+ catch(error){actual=redact(error.message);failure??=error;writeFileSync(join(diagnostics,name+'-error.txt'),redact(error.stack));if(terminal)writeFileSync(join(diagnostics,name+'.txt'),redact(terminal.screen.text()));if(provider)writeFileSync(join(diagnostics,name+'-tool-results.json'),redact(resultText(provider.requests.slice(requestIndex))));}
  report.scenarios.push({buildId:metadata.buildId,sourceCommit:metadata.sourceCommit,target,os:report.os,scenario:name,expectedResult:spec[name]??'Standard-user bootstrap succeeds independently of administrator ConPTY tests',actualResult:actual,pass:passed,durationMs:Date.now()-started,diagnosticArtifacts:passed?[]:[`artifacts/${target}/${name}.txt`]});recorded.add(name);saveReport();console.log(`${passed?'PASS':'FAIL'} ${name}: ${passed?'verified':actual}`);
  return passed;
 }
@@ -183,7 +183,13 @@ try{
   }finally{await quit();writeFileSync(join(app,'data/profiles/devneya/cordis.patch.yml'),original,{mode:0o600});await open();}
  });
  await record('managed-updates',async()=>{const before=await hash(join(doctor.runtimeRoot,'app/package-lock.json'));const mark=terminal.mark();terminal.write('/update');await delay(250);terminal.write('\r');await terminal.until(/This devneya build is updated as a whole|github.com\/Devneya\/tui\/releases/,60000,mark);assert(!terminal.exited);assert.equal(await hash(join(doctor.runtimeRoot,'app/package-lock.json')),before);await turn('DEVNEYA_AFTER_UPDATE');});
- await record('native-modules',async()=>{assert(doctor.checks.filter(c=>['node-pty','koffi','sharp','bundled-node'].includes(c.name)).length===4);assert(doctor.checks.every(c=>c.ok));});
+ await record('native-modules',async()=>{
+  assert(doctor.checks.filter(c=>['node-pty','koffi','sharp','bundled-node'].includes(c.name)).length===4);assert(doctor.checks.every(c=>c.ok));
+  if(process.platform!=='win32'){
+   const {stdout}=await execute(join(doctor.runtimeRoot,'bin/dsh'),['--version'],{env:{...env,PATH:join(doctor.runtimeRoot,'bin'),DSH_HOME:join(app,'data'),DEVNEYA_MANAGED_BUILD:'1'}});
+   assert.match(stdout,/0\.2\.0-rc\.2/,'Internal shim must use bundled Node with no external utilities on PATH');
+  }
+ });
  await record('persistence',async()=>{const model=readFileSync(join(app,'tui/model.json'),'utf8');const credentials=await hash(join(app,'data/.credentials.yaml'));await quit();await open();assert.equal(readFileSync(join(app,'tui/model.json'),'utf8'),model);assert.equal(await hash(join(app,'data/.credentials.yaml')),credentials);await turn('DEVNEYA_PERSISTED');});
  await record('resume',async()=>{
   const sessionId=currentSessionId();assert(sessionId);await quit();await open(['--resume',sessionId]);assert.equal(currentSessionId(),sessionId);

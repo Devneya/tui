@@ -1,4 +1,4 @@
-# Dependency review — candidate, not a release approval
+# Dependency review — devneya 0.1.0
 
 The initial strict tree resolved 620 physical packages. `npm audit --omit=dev`
 reported 14 affected packages (7 high, 7 moderate), stemming from three underlying
@@ -14,8 +14,7 @@ These are narrow transitive security overrides. The agreed DSH RC.2 and Chimney
 0.15.0 versions are unchanged. A fresh strict install, native imports, and all 29
 finished-executable scenarios passed for the local Linux candidate. Its fixed
 tree audit on 2026-10-16 reported zero known advisories. Raw audit output is
-`artifacts/implementation/npm-audit-fixed.json`. Native CI qualification remains
-pending. No audit exemption or `audit fix --force` is used.
+`artifacts/implementation/npm-audit-fixed.json`. Native CI qualification results are recorded in the implementation ledger. No audit exemption or `audit fix --force` is used.
 
 No existing credentials are imported or migrated. Optional MCP configuration
 must retain issuer information provided by the updated client. The payload must

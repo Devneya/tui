@@ -1,7 +1,7 @@
 # devneya v0.1.0 packaging contract
 
 **Updated:** 2026-10-16
-**Status:** Implementation contract selected; no executable has completed acceptance. This document does not assert that builds, tests, or releases are complete.
+**Status:** Implemented packaging contract. Exact qualification runs and release status are recorded in [IMPLEMENTATION_LEDGER.md](IMPLEMENTATION_LEDGER.md); acceptance receipts remain the release gate.
 
 ## Source pair and toolchain
 
@@ -38,7 +38,7 @@ Build each target natively in GitHub Actions using a matching OS/CPU runner. The
 | Required | `darwin-arm64` | macOS 15 |
 | Preview only | `windows-x64` | Windows Server 2025; distribute only after full qualification on that target |
 
-Linux and macOS targets are currently unqualified. Windows remains preview-only and unqualified. Only include targets whose finished executable passes every required acceptance item.
+Only include targets whose finished executable passes every required acceptance item. Windows remains preview-only and unqualified; unresolved native dependencies must not be treated as supplied by an installed developer toolchain.
 
 No paid signing is planned. Linux and Windows executables are unsigned. macOS executables use ad-hoc signatures and are not notarized. State this clearly with every release.
 
@@ -58,7 +58,7 @@ Only after all required acceptance passes may the release `vSEMVER` tag be creat
 
 Keep replaceable runtime files in `runtime/<build-id>/`. DSH profiles and provider credentials live under `data/`, with the devneya profile at `data/profiles/devneya/`; saved sessions and attachments live separately under `data/sessions/`. TUI preferences, including language configuration, live under `tui/`. Caches and redacted logs also remain beneath the application root. Replacing or repairing the executable must preserve profiles, credentials, preferences, and sessions. Do not modify an existing DSH installation, its credentials, package caches, or shell configuration.
 
-The full acceptance matrix in [DSH_TUI_BINARY_HANDOFF.md](DSH_TUI_BINARY_HANDOFF.md#10-acceptance-tests--release-is-blocked-until-these-pass) is the release gate. At minimum, it covers cold offline startup, a clean home without system runtimes, provider setup without a DeepSeek key, session resume, tools/workers, isolation, recovery, relocation, concurrency, and update/rollback. No test result is recorded here as passed.
+The full acceptance matrix in [DSH_TUI_BINARY_HANDOFF.md](DSH_TUI_BINARY_HANDOFF.md#10-acceptance-tests--release-is-blocked-until-these-pass) is the release gate. At minimum, it covers cold offline startup, a clean home without system runtimes, provider setup without a DeepSeek key, session resume, tools/workers, isolation, recovery, relocation, concurrency, and update/rollback. See the implementation ledger and archived acceptance receipts for measured results.
 
 ## Licensing
 
