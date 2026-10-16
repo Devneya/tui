@@ -70,3 +70,10 @@ Release status: **not qualified; no release tag created**. Required scenarios re
 - Commands: `python3 scripts/source_bundle.py --collect-notices`; `python3 scripts/source_bundle.py --candidate`; `validate_source_bundle(..., allow_candidate=True)` rehearsal; `python3 scripts/package_release.py --target linux-x64 --candidate`. Evidence: `artifacts/implementation/native-source-notices.log`, `source-bundle-rehearsal.log`, `package-linux-candidate.log`; source bundle 201,786,568 bytes, SHA-256 `f66f8798aa271e64aea74dec248813a156b6b8e01bc9c5d087b89381b2b1df54`. Candidate receipts cannot pass publication gates. Native platform assets and a complete nonpublishing release assembly remain pending.
 - Repository access: `/snap/gh/current/gh auth status` succeeds; Actions enabled; release publication is tag-gated. The pipeline builds an actual committed first-parent data-compatible rollback fixture.
 - Next unit: finish 7, then assemble actual accepted platform outputs in 8.
+
+## Unit 7 — committed native CI input
+
+- Implementation baseline committed as `27775933e8d5d786db776fafe9b483923b2a83af`. This follow-up documentation commit leaves the same data-compatible DSH/TUI composition and gives native CI a real first parent for rollback.
+- Local candidate platform archive validated with `read_archive(...)` and `validate_receipt(..., allow_candidate=True)`; the finished executable digest, all 29 receipts, pinned build inputs, notices and source identities agree. Publication still rejects this dirty-source candidate.
+- Commands: `git diff --cached --check`; pinned `gofmt -l cmd internal` (clean); staged credential-pattern scan (no credential material detected); `git commit -m 'Implement self-contained devneya runtime and qualification pipeline'`. Original upstream notice whitespace is retained under explicit Git attributes and checked by hashes.
+- Next: push the two committed revisions and inspect all native CI outcomes. No release tag yet.
