@@ -8,6 +8,7 @@ import json
 import os
 import re
 import shutil
+import stat
 import subprocess
 import sys
 from pathlib import Path
@@ -224,6 +225,15 @@ def cleanup_worktree(repo: Path, worktree: Path) -> None:
         raise BaselineError(
             f"Refusing to remove baseline worktree with tracked changes; inspect it at {worktree}"
         )
+    # Go's module cache deliberately creates read-only directories and files.
+    # Only this freshly-created, verified worktree is managed here. Do not
+    # follow npm .bin links or change permissions outside its tree.
+    for directory, dirs, files in os.walk(worktree, followlinks=False):
+        for name in [*dirs, *files]:
+            path = Path(directory)/name
+            mode = path.lstat().st_mode
+            if not stat.S_ISLNK(mode) and not mode & stat.S_IWUSR:
+                path.chmod(stat.S_IMODE(mode)|stat.S_IWUSR)
     try:
         subprocess.run(
             ["git", "-C", str(repo), "worktree", "remove", "--force", str(worktree)],

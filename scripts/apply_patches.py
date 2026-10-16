@@ -37,7 +37,7 @@ def apply(root: Path, diff_path: Path):
     # npm's hidden install cache predates the patched package manifests.
     (root / '.package-lock.json').unlink(missing_ok=True)
     diff_path.parent.mkdir(parents=True, exist_ok=True)
-    diff_path.write_text(''.join(diffs))
+    diff_path.write_text(''.join(diffs), encoding='utf-8')
     return len(pending)
 
 if __name__ == '__main__':

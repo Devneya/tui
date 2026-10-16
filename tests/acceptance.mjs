@@ -25,7 +25,18 @@ for(const d of [home,workspace,toolbin])mkdirSync(d,{recursive:true});
 const report={schemaVersion:1,product:'devneya',version:metadata.version,buildId:metadata.buildId,sourceCommit:metadata.sourceCommit,target,os:`${platform()} ${release()} ${arch()}`,runner:{image:process.env.ImageOS??'local',imageVersion:process.env.ImageVersion??'local'},scenarios:[],passed:false,binarySha256:await hash(binary)};
 const diagnostics=resolve('artifacts',target);mkdirSync(diagnostics,{recursive:true});
 const env={HOME:home,USERPROFILE:home,USER:'devneya-test',LOGNAME:'devneya-test',PWD:workspace,DEVNEYA_HOME:app,TERM:'xterm-256color',COLORTERM:'truecolor',LANG:'zh_CN.UTF-8',LC_ALL:'zh_CN.UTF-8',NO_PROXY:'127.0.0.1,localhost'};
-if(process.platform==='win32'){env.SystemRoot=process.env.SystemRoot;env.ComSpec=process.env.ComSpec;env.LOCALAPPDATA=join(home,'AppData/Local');env.PATH=join(env.SystemRoot,'System32');}else{
+if(process.platform==='win32'){
+ env.SystemRoot=process.env.SystemRoot;env.ComSpec=process.env.ComSpec;env.LOCALAPPDATA=join(home,'AppData/Local');
+ const allowed=[join(env.SystemRoot,'System32')];
+ for(const name of ['pwsh.exe','git.exe','rg.exe']){
+  try{
+   const {stdout}=await execute(join(env.SystemRoot,'System32/where.exe'),[name]);const folder=dirname(stdout.trim().split(/\r?\n/)[0]);
+   if(['node.exe','npm.cmd','npx.cmd','pnpm.cmd','bun.exe','dsh.cmd','nvm.exe'].some(tool=>existsSync(join(folder,tool))))throw Error('External tool directory also exposes an application runtime');
+   allowed.push(folder);
+  }catch(error){if(name==='pwsh.exe')throw error;}
+ }
+ env.PATH=[...new Set(allowed)].join(';');
+}else{
  for(const name of ['bash','sh','git','rg','ps','uname','env','printf','cat','pwd','true','false','sleep','echo']){
   try{const {stdout}=await execute('/usr/bin/which',[name]);symlinkSync(stdout.trim(),join(toolbin,name));}catch(error){if(['bash','sh'].includes(name))throw error;}
  }

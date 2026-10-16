@@ -1,6 +1,8 @@
 """Shared fail-closed release identity and acceptance validation."""
 import hashlib,json,re,stat,tarfile,zipfile
 from pathlib import Path
+if not __debug__:
+    raise RuntimeError('Optimized Python is unsupported: required release checks must remain enabled')
 ROOT=Path(__file__).resolve().parents[1]
 CONFIG=json.loads((ROOT/'build.json').read_text())
 

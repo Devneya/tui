@@ -83,6 +83,13 @@ manifest_node = "0.0.0" if {variant_expr} == "wrong-node" else config["node"]
 release_eligible = False if {variant_expr} == "not-release-eligible" else True
 if {tracked_edit_expr}:
     (root / "cmd/devneya/main.go").write_text("unexpected tracked edit\\n", encoding="utf-8")
+if {variant_expr} == "readonly-cache":
+    cache = root / ".build" / "module-cache" / "read-only"
+    cache.mkdir(parents=True)
+    file = cache / "LICENSE"
+    file.write_text("generated module-cache fixture")
+    file.chmod(0o400)
+    cache.chmod(0o500)
 out = root / "dist" / "linux-x64"
 out.mkdir(parents=True, exist_ok=True)
 binary = out / "devneya"
@@ -175,6 +182,12 @@ manifest = {{
 
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("no available first-parent commit (HEAD^)", result.stderr)
+        self.assertFalse((self.repo / ".build" / "rollback-source-linux-x64").exists())
+
+    def test_cleans_readonly_module_cache_inside_its_owned_worktree(self):
+        self.create_parent_and_candidate(variant="readonly-cache")
+        result = self.run_helper()
+        self.assertEqual(result.returncode, 0, result.stderr)
         self.assertFalse((self.repo / ".build" / "rollback-source-linux-x64").exists())
 
     def test_rejects_incompatible_pinned_parent_config(self):

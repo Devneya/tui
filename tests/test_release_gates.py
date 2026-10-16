@@ -1,10 +1,14 @@
-import copy,hashlib,json,sys,tempfile,unittest
+import copy,hashlib,json,subprocess,sys,tempfile,unittest
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'scripts'))
 from release_common import ROOT,validate_receipt,sha
 from normalize_lock import normalize
 
 class ReleaseGates(unittest.TestCase):
+    def test_optimized_python_cannot_disable_release_assertions(self):
+        result=subprocess.run([sys.executable,'-O','-c',f'import sys;sys.path.insert(0,{str(ROOT/"scripts")!r});import release_common'],capture_output=True,text=True)
+        self.assertNotEqual(result.returncode,0)
+        self.assertIn('required release checks must remain enabled',result.stderr)
     def fixture(self):
         identity={'sourceCommit':'a'*40,'target':'linux-x64','abi':'glibc-2.35','payloadFormatVersion':1,'lockfileSha256':sha(ROOT/'runtime/package-lock.json'),'integrationPatchSha256':sha(ROOT/'patches/integration.json'),'nodeArchiveSha256':json.loads((ROOT/'node-checksums.json').read_text())['node-v24.22.0-linux-x64.tar.xz'],'payloadSha256':'d'*64}
         full=hashlib.sha256(json.dumps(identity,sort_keys=True,separators=(',',':')).encode()).hexdigest()

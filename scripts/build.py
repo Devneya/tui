@@ -17,6 +17,9 @@ from pathlib import Path
 
 from apply_patches import apply
 
+if not __debug__:
+    raise RuntimeError('Optimized Python is unsupported: required build checks must remain enabled')
+
 REPO = Path(__file__).resolve().parents[1]
 BUILD = REPO / '.build'
 CONFIG = json.loads((REPO / 'build.json').read_text())
@@ -235,7 +238,11 @@ def main():
         run(['codesign','--verify','--strict',binary])
     run([sys.executable, REPO/'scripts/native_inventory.py', out, '--target', target, '--output', REPO/'artifacts'/target/'launcher-native-inventory.json'])
     shutil.copyfile(generated / 'metadata.json', out / 'build-manifest.json')
-    shutil.copytree(legal, out / 'legal', dirs_exist_ok=True)
+    # Replace this generated notice tree. copytree preserves upstream read-only
+    # license modes, which would prevent a later build from overwriting it.
+    if (out/'legal').exists():
+        shutil.rmtree(out/'legal')
+    shutil.copytree(legal, out / 'legal')
     run([binary,'--version'])
     print(f'Built {binary}; acceptance and packaging are separate required gates', flush=True)
 
