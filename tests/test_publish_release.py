@@ -16,7 +16,7 @@ import release_common
 
 
 class Publication(unittest.TestCase):
-    def exercise(self, *, settings_status=403, published=False, wrong_digest=False):
+    def exercise(self, *, settings_status=403, published=False, wrong_digest=False, existing_draft=False, duplicate=False):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             assets = root/'release-assets'
@@ -24,7 +24,7 @@ class Publication(unittest.TestCase):
             for name in ['devneya-v0.1.0-linux-x64.tar.gz', 'SHA256SUMS', 'provenance.sigstore.json']:
                 (assets/name).write_bytes(name.encode())
             (root/'release-notes.md').write_text('Test release')
-            state = {'created': published, 'assets': [], 'mutations': [], 'published': False}
+            state = {'created': published or existing_draft, 'assets': [], 'mutations': [], 'published': False, 'api': []}
 
             def command(args, **kwargs):
                 argv = args[1:]
@@ -33,14 +33,25 @@ class Publication(unittest.TestCase):
                     return result
                 if argv[0] == 'api':
                     endpoint = argv[1]
+                    state['api'].append(endpoint)
                     if endpoint.endswith('/immutable-releases'):
                         result.returncode = 1
                         result.stderr = f'gh: Resource not accessible (HTTP {settings_status})'
-                    elif '/releases/tags/' in endpoint and not state['created']:
+                    elif '/releases/tags/' in endpoint:
+                        # GitHub's tag lookup does not expose an unpublished
+                        # draft, including one created by the same token.
                         result.returncode = 1
                         result.stderr = 'gh: Not Found (HTTP 404)'
+                    elif endpoint.endswith('/releases?per_page=100'):
+                        self.assertIn('--paginate',argv)
+                        self.assertIn('--slurp',argv)
+                        releases=[{'id':1,'tag_name':'v0.1.0','draft':not published,'assets':state['assets']}] if state['created'] else []
+                        if duplicate and releases:releases.append({**releases[0],'id':2})
+                        # Matching release deliberately appears on a later page.
+                        result.stdout=json.dumps([[],releases])
                     else:
-                        result.stdout = json.dumps({'id': 1, 'draft': not published, 'assets': state['assets']})
+                        self.assertTrue(endpoint.endswith('/releases/1'))
+                        result.stdout = json.dumps({'id': 1, 'tag_name':'v0.1.0','draft': not published, 'assets': state['assets']})
                     return result
                 self.assertEqual(argv[0], 'release')
                 self.assertNotIn('--clobber', argv)
@@ -93,6 +104,18 @@ class Publication(unittest.TestCase):
         self.assertIsInstance(error, SystemExit)
         self.assertFalse(state['published'])
         self.assertFalse(any(a[1] == 'edit' for a in state['mutations']))
+
+    def test_existing_draft_is_resumed_through_paginated_list_without_recreation(self):
+        state, _, error = self.exercise(existing_draft=True)
+        self.assertIsNone(error)
+        self.assertTrue(state['published'])
+        self.assertFalse(any(a[1]=='create' for a in state['mutations']))
+        self.assertFalse(any('/releases/tags/' in endpoint for endpoint in state['api']))
+
+    def test_duplicate_drafts_stop_before_any_mutation(self):
+        state, _, error = self.exercise(existing_draft=True,duplicate=True)
+        self.assertIsInstance(error,AssertionError)
+        self.assertEqual(state['mutations'],[])
 
 
 if __name__ == '__main__':

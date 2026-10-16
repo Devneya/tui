@@ -6,10 +6,9 @@ from release_common import CONFIG,ROOT,sha
 GH='/snap/gh/current/gh' if Path('/snap/gh/current/gh').exists() else shutil.which('gh')
 REPO=CONFIG['repository'];TAG=os.environ['RELEASE_TAG'];assert TAG=='v'+CONFIG['version']
 
-def gh(*args,allow_missing=False):
+def gh(*args):
     p=subprocess.run([GH,*args],cwd=ROOT,text=True,capture_output=True)
     if p.returncode:
-        if allow_missing and '404' in p.stderr:return None
         raise RuntimeError('GitHub command failed: '+' '.join(args[:3])+': '+p.stderr)
     return p.stdout
 
@@ -25,13 +24,21 @@ except RuntimeError as error:
     print('Immutable settings API requires Administration:read; use the pre-tag administrator audit. No policy value is inferred.')
 else:
     print('Immutable releases:',bool(immutable['enabled']),'enforced by owner:',bool(immutable['enforced_by_owner']))
-release=gh('api',f'repos/{REPO}/releases/tags/{TAG}',allow_missing=True)
+def find_release():
+    # The tag endpoint returns published releases, not drafts. List releases
+    # with push access and inspect every page so retries can resume a draft.
+    pages=json.loads(gh('api',f'repos/{REPO}/releases?per_page=100','--paginate','--slurp'))
+    matches=[release for page in pages for release in page if release['tag_name']==TAG]
+    assert len(matches)<=1,'Multiple releases use this tag; refusing ambiguous draft assembly'
+    return matches[0] if matches else None
+
+release=find_release()
 if release:
-    release=json.loads(release)
     if not release['draft']:raise SystemExit('A published release already exists; its assets will not be replaced')
 else:
     gh('release','create',TAG,'--repo',REPO,'--verify-tag','--draft','--title',f'devneya {CONFIG["version"]}','--notes-file',str(ROOT/'release-notes.md'))
-    release=json.loads(gh('api',f'repos/{REPO}/releases/tags/{TAG}'))
+    release=find_release()
+    assert release and release['draft'],'Created draft is not visible; refusing asset mutation'
 assets={p.name:p for p in (ROOT/'release-assets').iterdir() if p.is_file()}
 assert 'SHA256SUMS' in assets and 'provenance.sigstore.json' in assets
 existing={a['name']:a for a in release['assets']};assert set(existing)<=set(assets),'Draft has unexpected assets'
