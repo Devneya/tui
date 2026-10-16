@@ -14,8 +14,17 @@ def gh(*args,allow_missing=False):
     return p.stdout
 
 gh('auth','status')
-immutable=json.loads(gh('api',f'repos/{REPO}/immutable-releases'))
-print('Immutable releases:',bool(immutable['enabled']),'enforced by owner:',bool(immutable['enforced_by_owner']))
+# This settings endpoint requires Administration:read, which GITHUB_TOKEN
+# cannot request. The release review audits it with an administrator's CLI.
+# Draft assembly and the no-replacement rule work under either policy.
+# https://docs.github.com/en/rest/repos/repos#check-if-immutable-releases-are-enabled-for-a-repository
+try:
+    immutable=json.loads(gh('api',f'repos/{REPO}/immutable-releases'))
+except RuntimeError as error:
+    if not any(status in str(error) for status in ['HTTP 403','HTTP 404']):raise
+    print('Immutable settings API requires Administration:read; use the pre-tag administrator audit. No policy value is inferred.')
+else:
+    print('Immutable releases:',bool(immutable['enabled']),'enforced by owner:',bool(immutable['enforced_by_owner']))
 release=gh('api',f'repos/{REPO}/releases/tags/{TAG}',allow_missing=True)
 if release:
     release=json.loads(release)

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {execFile,spawn} from 'node:child_process';
 import {promisify} from 'node:util';
 import {createHash,randomUUID} from 'node:crypto';
-import {createReadStream,mkdirSync,mkdtempSync,readFileSync,readlinkSync,writeFileSync,readdirSync,existsSync,copyFileSync,chmodSync,renameSync,statSync,rmSync,symlinkSync} from 'node:fs';
+import {createReadStream,mkdirSync,mkdtempSync,readFileSync,readlinkSync,realpathSync,writeFileSync,readdirSync,existsSync,copyFileSync,chmodSync,renameSync,statSync,rmSync,symlinkSync} from 'node:fs';
 import {tmpdir,platform,release,arch,userInfo} from 'node:os';
 import {join,resolve,dirname} from 'node:path';
 import {createRequire} from 'node:module';
@@ -20,7 +20,7 @@ const spec=JSON.parse(readFileSync(new URL('./scenarios.json',import.meta.url),'
 const config=JSON.parse(readFileSync(new URL('../build.json',import.meta.url),'utf8'));
 assert.equal(metadata.target,target);
 const temporaryRoot=process.env.DEVNEYA_ACCEPTANCE_TMP?resolve(process.env.DEVNEYA_ACCEPTANCE_TMP):tmpdir();mkdirSync(temporaryRoot,{recursive:true});
-const base=mkdtempSync(join(temporaryRoot,'devneya-acceptance-'));const app=join(base,'owned');const home=join(base,'home');const workspace=join(base,'workspace Ω with spaces');const toolbin=join(base,'tools');
+const base=realpathSync(mkdtempSync(join(temporaryRoot,'devneya-acceptance-')));const app=join(base,'owned');const home=join(base,'home');const workspace=join(base,'workspace Ω with spaces');const toolbin=join(base,'tools');
 for(const d of [home,workspace,toolbin])mkdirSync(d,{recursive:true});
 const report={schemaVersion:1,product:'devneya',version:metadata.version,buildId:metadata.buildId,sourceCommit:metadata.sourceCommit,target,os:`${platform()} ${release()} ${arch()}`,runner:{image:process.env.ImageOS??'local',imageVersion:process.env.ImageVersion??'local'},scenarios:[],passed:false,binarySha256:await hash(binary)};
 const diagnostics=resolve('artifacts',target);mkdirSync(diagnostics,{recursive:true});
@@ -46,7 +46,7 @@ if(process.platform==='win32'){
 // caller puts fixture storage beneath a source checkout. Parent repositories
 // must not broaden workspace-write during approval tests.
 await execute('git',['-C',workspace,'init','--quiet','--template='],{env:{...process.env,HOME:home,USERPROFILE:home,GIT_CONFIG_NOSYSTEM:'1'}});
-let terminal;let provider;let doctor;let failure;
+let terminal;let provider;let doctor;let failure;let macProcessLibrary;let macProcessPath;
 const recorded=new Set();
 function redact(text){return String(text).replaceAll(base,'<fixture>').replaceAll(MOCK_API_KEY,'<fake-key>').replaceAll(directory,'<candidate>').replaceAll(resolve('.'),'<source>');}
 function saveReport(){report.passed=report.scenarios.length===Object.keys(spec).length+(target==='windows-x64'?1:0)&&report.scenarios.every(r=>r.pass);writeFileSync(join(directory,'acceptance-report.json'),JSON.stringify(report,null,2)+'\n');}
@@ -66,7 +66,22 @@ async function wait(predicate,timeout=60000){const start=Date.now();while(Date.n
 async function ownedProcesses(){
  const prefix=join(app,'runtime');
  if(process.platform==='linux')return readdirSync('/proc').filter(pid=>/^\d+$/.test(pid)).filter(pid=>{try{return readlinkSync('/proc/'+pid+'/exe').startsWith(prefix+'/');}catch{return false;}}).map(Number);
- if(process.platform==='darwin'){const {stdout}=await execute('/bin/ps',['-axo','pid=,comm=']);return stdout.split('\n').flatMap(line=>{const match=/^\s*(\d+)\s+(.+)$/.exec(line);return match&&match[2].startsWith(prefix+'/')?[Number(match[1])]:[];});}
+ if(process.platform==='darwin'){
+  if(!macProcessPath){
+   const runtime=doctor?.runtimeRoot??join(app,'runtime',metadata.buildId);
+   if(!existsSync(join(runtime,'app/node_modules/koffi/package.json')))return [];
+   const require=createRequire(join(runtime,'app/package.json'));
+   macProcessLibrary=require('koffi').load('/usr/lib/libproc.dylib');
+   // Query executable paths rather than ps command names: the TUI sets
+   // process.title. Apple's signature is in xnu/libsyscall/wrappers/libproc/libproc.h.
+   macProcessPath=macProcessLibrary.func('int proc_pidpath(int pid, void *buffer, uint32_t buffersize)');
+  }
+  const {stdout}=await execute('/bin/ps',['-axo','pid=']);
+  return stdout.trim().split(/\s+/).filter(Boolean).map(Number).filter(pid=>{
+   const buffer=Buffer.alloc(4096);const length=macProcessPath(pid,buffer,buffer.length);
+   return length>0&&buffer.toString('utf8',0,length).startsWith(prefix+'/');
+  });
+ }
  const script="Get-CimInstance Win32_Process | Where-Object { $_.ExecutablePath -and $_.ExecutablePath.StartsWith($env:DEVNEYA_OWNED_PREFIX, [StringComparison]::OrdinalIgnoreCase) } | ForEach-Object { $_.ProcessId }";
  const {stdout}=await execute('pwsh',['-NoProfile','-Command',script],{env:{...process.env,DEVNEYA_OWNED_PREFIX:prefix+'\\'}});return stdout.trim().split(/\s+/).filter(Boolean).map(Number);
 }
@@ -115,7 +130,12 @@ try{
  });
  const fresh=await record('fresh-application-root',async()=>{await open([],{},true);assert(existsSync(join(app,'data/profiles/devneya/package.json')));assert(!existsSync(join(app,'data/profiles/devneya/node_modules')));});
  if(!fresh)throw failure;
- await record('no-system-runtime',async()=>{assert(!existsSync(join(toolbin,'node')));assert(!existsSync(join(toolbin,'npm')));assert(!terminal.exited);doctor=JSON.parse((await command(['doctor','--json'])).stdout);assert(doctor.checks.every(c=>c.ok));});
+ await record('no-system-runtime',async()=>{
+  assert(!existsSync(join(toolbin,'node')));assert(!existsSync(join(toolbin,'npm')));assert(!terminal.exited);doctor=JSON.parse((await command(['doctor','--json'])).stdout);assert(doctor.checks.every(c=>c.ok));
+  const running=await ownedProcesses();
+  if(process.platform!=='win32')assert(running.includes(terminal.child.pid),'Process inventory must recognize the running application before checking for orphan workers');
+  else assert(running.length>0,'Process inventory must recognize bundled Node');
+ });
  await record('english-default',async()=>{assert.equal(JSON.parse(readFileSync(join(app,'tui/lang.json'),'utf8')).lang,'en');assert.match(terminal.text,/Welcome to dsh-TUI|Say something/);});
  await record('storage-isolation',async()=>{
   for(const dir of ['.dsh','.dsh-tui']){mkdirSync(join(home,dir),{recursive:true});writeFileSync(join(home,dir,'unrelated-fixture'),'unchanged');}
