@@ -233,6 +233,9 @@ try{
  await record('relocation',async()=>{await quit();const moved=join(base,'relocated Ω with spaces');mkdirSync(moved);const path=join(moved,process.platform==='win32'?'devneya.exe':'devneya');copyFileSync(binary,path);if(process.platform!=='win32')chmodSync(path,0o755);const t=new Terminal(path,[],{cwd:workspace,env});terminal=t;await t.ready();await turn('DEVNEYA_RELOCATED');await quit();assert.deepEqual(readdirSync(moved),[process.platform==='win32'?'devneya.exe':'devneya']);});
  if(target==='windows-x64')await record('standard-user-bootstrap',async()=>{const output=await execute('pwsh',['-NoProfile','-File',resolve('scripts/windows_standard_user.ps1'),'-Candidate',binary],{timeout:240000,maxBuffer:1024*1024});assert(JSON.parse(output.stdout).ok);});
  await record('permissions',async()=>{
+  const marker=join(home,'ownership.json');writeFileSync(marker,'{"schemaVersion":1,"product":"devneya"}');
+  const homeAlias=join(dirname(home),'HOME');const homes=[home];if(existsSync(homeAlias)&&statSync(homeAlias).ino===statSync(home).ino)homes.push(homeAlias);
+  for(const root of homes)await assert.rejects(command(['doctor'],{DEVNEYA_HOME:root}),error=>error.code===1&&/home|unsafe/i.test(error.stderr));
   if(process.platform!=='win32')assert.notEqual(userInfo().uid,0,'Standard user required');const bad=join(base,'not-a-directory');writeFileSync(bad,'unchanged');try{await command(['doctor'],{DEVNEYA_HOME:bad});assert.fail('Invalid root accepted');}catch(e){assert.equal(e.code,1);}assert.equal(readFileSync(bad,'utf8'),'unchanged');
   const unwritable=join(base,'unwritable');mkdirSync(unwritable);if(process.platform==='win32'){await execute('icacls',[unwritable,'/deny',`${userInfo().username}:(W)`]);}else chmodSync(unwritable,0o500);
   try{await assert.rejects(command(['doctor'],{DEVNEYA_HOME:join(unwritable,'devneya')}),error=>error.code===1&&/devneya:/i.test(error.stderr));}

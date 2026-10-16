@@ -87,3 +87,5 @@ Release status: **not qualified; no release tag created**. Required scenarios re
 - Next: rerun unit 7 with these build/test-harness fixes. No release tag.
 
 - Additional unit 7 fixture correction: the original Ubuntu 22.04 digest was an amd64 image manifest, not a multi-CPU index. `podman manifest inspect docker.io/library/ubuntu:22.04` verified the matching native ARM64 digest. `build.json` now pins both architecture-specific images; the Ubuntu 22.04/glibc 2.35 baseline is unchanged.
+
+- Unit 7 root-validation review: compare the existing application directory's filesystem identity with HOME before accepting its ownership marker. This covers case/normalization aliases on Windows and macOS. The finished-executable permissions scenario now supplies a valid marker and verifies that HOME and any physical case alias are rejected. Linux race tests pass; native validation remains required.

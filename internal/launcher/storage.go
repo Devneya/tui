@@ -82,9 +82,17 @@ func OwnedRoot() (string, error) {
 	if root == realHome || root == filepath.Dir(root) {
 		return "", fmt.Errorf("unsafe application root")
 	}
-	if st, e := os.Lstat(root); e == nil && (!st.IsDir() || st.Mode()&os.ModeSymlink != 0) {
-		return "", fmt.Errorf("application root must be a real directory")
-	} else if e != nil && !os.IsNotExist(e) {
+	if st, e := os.Lstat(root); e == nil {
+		if !st.IsDir() || st.Mode()&os.ModeSymlink != 0 {
+			return "", fmt.Errorf("application root must be a real directory")
+		}
+		// Windows and default macOS filesystems can spell the same home
+		// directory with different case or Unicode normalization. Compare
+		// filesystem identity before accepting even a valid ownership marker.
+		if homeInfo, homeErr := os.Stat(home); homeErr == nil && os.SameFile(st, homeInfo) {
+			return "", fmt.Errorf("application root cannot be your home directory")
+		}
+	} else if !os.IsNotExist(e) {
 		return "", e
 	}
 	if err = os.Mkdir(root, 0700); err != nil && !os.IsExist(err) {
