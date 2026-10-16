@@ -8,7 +8,9 @@ import subprocess
 from pathlib import Path
 
 LINUX_SYSTEM = re.compile(r'^(?:linux-vdso\.so\.\d|ld-linux[^/]*\.so\.\d|lib(?:c|m|dl|pthread|rt|resolv|util|gcc_s|stdc\+\+)\.so\.[0-9.]+)$')
-WINDOWS_SYSTEM = set('kernel32 kernelbase ntdll advapi32 bcrypt bcryptprimitives crypt32 cryptbase cryptnet user32 userenv gdi32 gdi32full shell32 shlwapi ole32 oleaut32 combase rpcrt4 ws2_32 mswsock iphlpapi dnsapi netapi32 secur32 sspicli psapi dbghelp version winmm winhttp wininet normaliz powrprof setupapi cfgmgr32 shcore ucrtbase msvcrt comdlg32 comctl32 dwmapi d2d1 d3d11 d3d12 d3dcompiler_47 dwrite dxgi dxcore icu usp10 propsys wintrust imagehlp winspool wtsapi32 hid cabinet authz imm32 urlmon ktmw32'.split())
+# d3d9 is the OS Direct3D 9 API, not the separately redistributable D3DX SDK:
+# https://learn.microsoft.com/en-us/windows/win32/api/d3d9/nf-d3d9-direct3dcreate9
+WINDOWS_SYSTEM = set('kernel32 kernelbase ntdll advapi32 bcrypt bcryptprimitives crypt32 cryptbase cryptnet user32 userenv gdi32 gdi32full shell32 shlwapi ole32 oleaut32 combase rpcrt4 ws2_32 mswsock iphlpapi dnsapi netapi32 secur32 sspicli psapi dbghelp version winmm winhttp wininet normaliz powrprof setupapi cfgmgr32 shcore ucrtbase msvcrt comdlg32 comctl32 dwmapi d2d1 d3d9 d3d11 d3d12 d3dcompiler_47 dwrite dxgi dxcore icu usp10 propsys wintrust imagehlp winspool wtsapi32 hid cabinet authz imm32 urlmon ktmw32'.split())
 
 def version(value):
     return tuple(map(int, value.split('.')))
@@ -132,11 +134,12 @@ def inventory(root, target):
             if machine != 0x8664:
                 records.append({'file':file.relative_to(root).as_posix(),'selected':False,'reason':'Object is for another CPU architecture'})
                 continue
-            for library in libraries:
-                stem = library.removesuffix('.dll')
-                if stem in WINDOWS_SYSTEM or library.startswith(('api-ms-win-','ext-ms-win-')) or library in bundled:
-                    continue
-                raise ValueError(f'Unbundled non-OS library {library} required by {file.relative_to(root)}')
+            unknown = [library for library in libraries
+                       if library.removesuffix('.dll') not in WINDOWS_SYSTEM
+                       and not library.startswith(('api-ms-win-','ext-ms-win-'))
+                       and library not in bundled]
+            if unknown:
+                raise ValueError(f'Unbundled libraries requiring OS or redistribution qualification for {file.relative_to(root)}: '+', '.join(unknown))
             records.append({'file':file.relative_to(root).as_posix(),'format':'PE','libraries':libraries,'loadQualification':'doctor and ConPTY acceptance required'})
     if not records:
         raise ValueError('No native objects inventoried')

@@ -10,6 +10,8 @@ clean installation. The patch-set SHA-256 is part of the embedded build identity
 - B: block managed update network/download/package-manager paths and present the
   whole-release message at `/update` before any shutdown. Disable the optional
   agent SDK installer in the managed front end. `/restart` is preserved.
+  Managed help tips describe embedded dependencies, owned theme storage,
+  whole-release updates and runtime-only repair instead of upstream installers.
 - C: use workspace-write and ask as initial Windows defaults. Explicit later
   permission choices remain upstream behavior.
 - D: guard both compiled plugin-manager operation entry points before any I/O.

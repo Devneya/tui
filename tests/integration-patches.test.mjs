@@ -32,6 +32,15 @@ test('managed update entry points reject before any fetch or runtime mutation',a
   assert.equal(requests,0);
  } finally { globalThis.fetch=old; }
 });
+test('managed distribution help describes embedded dependencies and whole releases',async()=>{
+ const url=pathToFileURL(join(tui,'lib/types/tips.js'));
+ const {TIPS}=await import(url);
+ const selected=TIPS.filter(tip=>['cmd-update','pit-update','pit-version-skew','pit-drift','pit-pnpm','pit-safe-mode'].includes(tip.id));
+ assert.equal(selected.length,6);assert(selected.every(tip=>!/(?:npm (?:install|i) -g|pnpm|dsh-tui safe|updates the TUI and restarts)/i.test(tip.en)));
+ assert.match(selected.find(tip=>tip.id==='pit-pnpm').en,/embedded/);
+ try{delete process.env.DEVNEYA_MANAGED_BUILD;url.search='upstream';const stock=await import(url);assert.match(stock.TIPS.find(tip=>tip.id==='pit-pnpm').en,/pnpm 10\+/);}
+ finally{process.env.DEVNEYA_MANAGED_BUILD='1';}
+});
 test('Windows initial defaults are restricted and retain explicit choices',()=>{
  const text=readFileSync(join(tui,'cordis.patch.yml'),'utf8');
  const mode=text.match(/- id: sandbox-policy\n  config:\n    mode: !!js "([^\n]+)"/)[1];

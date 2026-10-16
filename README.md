@@ -2,7 +2,7 @@
 
 devneya is a self-contained terminal interface for DeepSeek Harness (DSH). The v0.1.0 implementation embeds an ordinary Node runtime and the frozen application dependencies inside one executable for each supported platform.
 
-**Release status:** a local Linux candidate passed all 29 acceptance scenarios. The four required native CI targets remain unqualified; Windows is preview-only and unqualified. No public release is available yet.
+**Release status:** a local Linux candidate passed all 29 acceptance scenarios. Both Linux targets passed native CI acceptance on Ubuntu 22.04; macOS remains unqualified. Windows is preview-only and unqualified. No public release is available yet.
 
 The selected build uses Chimney `@deepseek-harness-tui/dsh-tui@0.15.0` and DSH `@deepseek-ai/dsh@0.2.0-rc.2`. DSH RC.2 is a prerelease explicitly accepted for this build; it is not stable.
 
@@ -76,7 +76,7 @@ The bundled application runtime does not require system Node, Bun, DSH, npm, pnp
 
 ## Supported platforms and signing
 
-The intended required targets are Linux x64 and arm64 on Ubuntu 22.04 with glibc 2.35, and macOS x64 and arm64 on macOS 15. These baselines are currently unqualified. Windows x64 on Windows Server 2025 is preview-only and will be distributed only if the full acceptance suite passes on that target.
+The intended required targets are Linux x64 and arm64 on Ubuntu 22.04 with glibc 2.35, and macOS x64 and arm64 on macOS 15. The Linux baselines passed all 29 native CI scenarios at source `adeabe610a254427b8b77e1fce377a75df347ead`; macOS qualification is pending. Windows x64 on Windows Server 2025 is preview-only and will be distributed only if the full acceptance suite passes on that target.
 
 Linux and Windows executables are unsigned. macOS executables are ad-hoc signed and are not notarized. No paid signing is planned. Each release will state which targets passed acceptance and provide checksums and the exact bundled-version manifest.
 

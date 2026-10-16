@@ -1,3 +1,4 @@
+import './prepare-pty.mjs';
 import pty from 'node-pty';
 import { Screen } from './terminal-screen.mjs';
 import { TerminalReplies } from './terminal-replies.mjs';

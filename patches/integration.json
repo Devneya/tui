@@ -288,6 +288,70 @@
           "after": "const LANG_FILE = join(process.env.DEVNEYA_TUI_HOME || join(homedir(), '.dsh-tui'), 'lang.json');"
         }
       ]
+    },
+    {
+      "package": "@deepseek-harness-tui/dsh-tui",
+      "version": "0.15.0",
+      "path": "lib/types/tips.js",
+      "sha256": "ef67fc688aed3960a38777f91cd1d738d5e4a3414c4f6333539f384952127d35",
+      "replacements": [
+        {
+          "before": "'/update updates the TUI and restarts, resuming the session'",
+          "after": "(process.env.DEVNEYA_MANAGED_BUILD === '1' ? '/update shows where to download a complete devneya release.' : '/update updates the TUI and restarts, resuming the session')"
+        },
+        {
+          "before": "'/update 自动更新 TUI 并重启恢复会话'",
+          "after": "(process.env.DEVNEYA_MANAGED_BUILD === '1' ? '/update 显示 devneya 完整版本的下载地址。' : '/update 自动更新 TUI 并重启恢复会话')"
+        },
+        {
+          "before": "'Themes: ~/.dsh-tui/themes/<name>.json or npm plugin registration, hot-swappable'",
+          "after": "(process.env.DEVNEYA_MANAGED_BUILD === '1' ? 'Themes: <application root>/tui/themes/<name>.json; switch in /settings.' : 'Themes: ~/.dsh-tui/themes/<name>.json or npm plugin registration, hot-swappable')"
+        },
+        {
+          "before": "'主题：~/.dsh-tui/themes/<名>.json 或 npm 插件注册，即时热切换'",
+          "after": "(process.env.DEVNEYA_MANAGED_BUILD === '1' ? '主题位于应用目录下的 tui/themes；在 /settings 中切换。' : '主题：~/.dsh-tui/themes/<名>.json 或 npm 插件注册，即时热切换')"
+        },
+        {
+          "before": "'/update requires launching via dsh --profile'",
+          "after": "(process.env.DEVNEYA_MANAGED_BUILD === '1' ? 'Replace the devneya executable to update; settings and sessions are preserved.' : '/update requires launching via dsh --profile')"
+        },
+        {
+          "before": "'/update 需 dsh --profile 方式启动'",
+          "after": "(process.env.DEVNEYA_MANAGED_BUILD === '1' ? '更新时替换 devneya 可执行文件；设置和会话保持不变。' : '/update 需 dsh --profile 方式启动')"
+        },
+        {
+          "before": "'On version skew, follow the npm install -g hint to align the launcher'",
+          "after": "(process.env.DEVNEYA_MANAGED_BUILD === '1' ? 'Check embedded components with devneya --version or devneya doctor.' : 'On version skew, follow the npm install -g hint to align the launcher')"
+        },
+        {
+          "before": "'提示版本错位时，按提示 npm install -g 对齐启动器'",
+          "after": "(process.env.DEVNEYA_MANAGED_BUILD === '1' ? '使用 devneya --version 或 devneya doctor 检查内置组件。' : '提示版本错位时，按提示 npm install -g 对齐启动器')"
+        },
+        {
+          "before": "'When the logo warns about dsh versions, follow the npm i -g @deepseek-ai/dsh hint'",
+          "after": "(process.env.DEVNEYA_MANAGED_BUILD === '1' ? 'For a damaged runtime, devneya repair preserves your settings and sessions.' : 'When the logo warns about dsh versions, follow the npm i -g @deepseek-ai/dsh hint')"
+        },
+        {
+          "before": "'logo ⚠ 提示 dsh 版本不符时，按提示 npm i -g @deepseek-ai/dsh 对齐'",
+          "after": "(process.env.DEVNEYA_MANAGED_BUILD === '1' ? '运行环境损坏时使用 devneya repair；设置和会话保持不变。' : 'logo ⚠ 提示 dsh 版本不符时，按提示 npm i -g @deepseek-ai/dsh 对齐')"
+        },
+        {
+          "before": "'pnpm 10+ is required (pnpm 9 fails at startup)'",
+          "after": "(process.env.DEVNEYA_MANAGED_BUILD === '1' ? 'Node and application dependencies are embedded; no package manager is required.' : 'pnpm 10+ is required (pnpm 9 fails at startup)')"
+        },
+        {
+          "before": "'需要 pnpm 10+（pnpm 9 会启动失败）'",
+          "after": "(process.env.DEVNEYA_MANAGED_BUILD === '1' ? '已内置 Node 和应用依赖，无需包管理器。' : '需要 pnpm 10+（pnpm 9 会启动失败）')"
+        },
+        {
+          "before": "'When dsh exits badly, dsh-tui safe offers read-only diagnostics and a clean rescue profile'",
+          "after": "(process.env.DEVNEYA_MANAGED_BUILD === '1' ? 'Use devneya doctor for diagnostics and devneya repair to rebuild only the runtime.' : 'When dsh exits badly, dsh-tui safe offers read-only diagnostics and a clean rescue profile')"
+        },
+        {
+          "before": "'dsh 异常退出会提示进入 dsh-tui safe：只读诊断 + 干净救援 profile'",
+          "after": "(process.env.DEVNEYA_MANAGED_BUILD === '1' ? '使用 devneya doctor 诊断；devneya repair 仅重建运行环境。' : 'dsh 异常退出会提示进入 dsh-tui safe：只读诊断 + 干净救援 profile')"
+        }
+      ]
     }
   ]
 }
