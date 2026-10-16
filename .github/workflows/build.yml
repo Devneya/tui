@@ -1,0 +1,165 @@
+name: Native build and qualification
+on:
+  workflow_call:
+    inputs:
+      source:
+        type: string
+        default: ''
+    outputs:
+      windowsQualified:
+        value: ${{ jobs.windows.outputs.qualified }}
+permissions:
+  contents: read
+jobs:
+  unit:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.source || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.27.2'
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24.22.0'
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.14.4'
+      - run: go test -mod=readonly -race ./...
+        env:
+          GOTOOLCHAIN: local
+      - run: go vet -mod=readonly ./...
+        env:
+          GOTOOLCHAIN: local
+      - run: python scripts/check_inputs.py
+      - run: python -m unittest discover -s tests -p 'test_*.py'
+      - run: node --test --test-isolation=none tests/mock-provider.test.mjs tests/terminal-screen.test.mjs tests/terminal-replies.test.mjs
+      - name: Assemble checked native corresponding sources
+        run: python scripts/source_bundle.py
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: native-sources
+          path: dist/sources/devneya-*
+          if-no-files-found: error
+          compression-level: 0
+  required:
+    needs: unit
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: linux-x64
+            runner: ubuntu-22.04
+          - target: linux-arm64
+            runner: ubuntu-22.04-arm
+          - target: darwin-arm64
+            runner: macos-15
+          - target: darwin-x64
+            runner: macos-15-intel
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.source || github.sha }}
+          fetch-depth: 2
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.27.2'
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.14.4'
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24.22.0'
+      - name: Build frozen native payload and executable
+        run: python scripts/build.py --target '${{ matrix.target }}'
+      - name: Build previous committed executable for rollback acceptance
+        run: python scripts/build_baseline.py --target '${{ matrix.target }}'
+      - name: Install test-only PTY dependency
+        run: npm --prefix tests ci --strict-peer-deps --strict-allow-scripts --no-audit --no-fund
+      - name: Accept the finished executable
+        run: node tests/acceptance.mjs --target '${{ matrix.target }}' --directory 'dist/${{ matrix.target }}'
+      - name: Assemble accepted platform archive
+        run: python scripts/package_release.py --target '${{ matrix.target }}'
+      - name: Require unchanged tracked source
+        run: git diff --exit-code
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: accepted-${{ matrix.target }}
+          path: dist/packages/*
+          if-no-files-found: error
+          compression-level: 0
+      - name: Upload qualification receipts
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: qualification-${{ matrix.target }}
+          path: |
+            dist/${{ matrix.target }}/acceptance-report.json
+            artifacts/${{ matrix.target }}/*.json
+            artifacts/${{ matrix.target }}/*.txt
+            artifacts/${{ matrix.target }}/integration.diff
+          if-no-files-found: warn
+  windows:
+    needs: unit
+    runs-on: windows-2025
+    timeout-minutes: 75
+    continue-on-error: true
+    outputs:
+      qualified: ${{ steps.qualify.outputs.qualified }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.source || github.sha }}
+          fetch-depth: 2
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.27.2'
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.14.4'
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24.22.0'
+      - id: build
+        run: python scripts/build.py --target windows-x64
+      - id: baseline
+        run: python scripts/build_baseline.py --target windows-x64
+      - id: test_dependencies
+        run: npm --prefix tests ci --strict-peer-deps --strict-allow-scripts --no-audit --no-fund
+      - id: acceptance
+        run: node tests/acceptance.mjs --target windows-x64 --directory dist/windows-x64
+      - id: package
+        run: python scripts/package_release.py --target windows-x64
+      - id: upload
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: accepted-windows-x64
+          path: dist/packages/*
+          if-no-files-found: error
+          compression-level: 0
+      - id: qualify
+        run: '"qualified=true" >> $env:GITHUB_OUTPUT'
+      - name: Always write Windows qualification outcome
+        if: always()
+        env:
+          QUALIFIED: ${{ steps.qualify.outputs.qualified }}
+          BUILD_OUTCOME: ${{ steps.build.outcome }}
+          ACCEPTANCE_OUTCOME: ${{ steps.acceptance.outcome }}
+          PACKAGE_OUTCOME: ${{ steps.package.outcome }}
+          UPLOAD_OUTCOME: ${{ steps.upload.outcome }}
+        run: python scripts/windows_qualification.py
+      - name: Always upload Windows report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: qualification-windows-x64
+          path: |
+            artifacts/windows-x64/qualification.json
+            dist/windows-x64/acceptance-report.json
+          if-no-files-found: error

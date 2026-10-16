@@ -1,0 +1,293 @@
+{
+  "schemaVersion": 1,
+  "patches": [
+    {
+      "package": "@deepseek-harness-tui/dsh-tui",
+      "version": "0.15.0",
+      "path": "lib/types/utils/paths.js",
+      "sha256": "0c6d846ef17b6f671698d2647c3aef95ee99344adb46093b295920119b8d86b1",
+      "replacements": [
+        {
+          "before": "export const DATA_DIR = join(homeDir(), '.dsh-tui');",
+          "after": "export const DATA_DIR = process.env.DEVNEYA_TUI_HOME || join(homeDir(), '.dsh-tui');"
+        }
+      ]
+    },
+    {
+      "package": "@deepseek-harness-tui/dsh-tui",
+      "version": "0.15.0",
+      "path": "lib/types/dsh-adapter/channel/reports.js",
+      "sha256": "0755fe388700778873812b90608b44b51cf42bb38dd42b9d8211b151cfc03093",
+      "replacements": [
+        {
+          "before": "import { homeDir } from '../../utils/paths.js';",
+          "after": "import { homeDir, DATA_DIR } from '../../utils/paths.js';"
+        },
+        {
+          "before": "join(homeDir(), '.dsh-tui/cordis.yml')",
+          "after": "join(DATA_DIR, 'cordis.yml')"
+        }
+      ]
+    },
+    {
+      "package": "@deepseek-harness-tui/dsh-tui",
+      "version": "0.15.0",
+      "path": "lib/types/dsh-adapter/compat/sessionLog.js",
+      "sha256": "237713d02ac615b0b259ab95481c87130c922eec8469f64865ea48e441523aa1",
+      "replacements": [
+        {
+          "before": "import { homeDir } from '../../utils/paths.js';",
+          "after": "import { homeDir, DATA_DIR } from '../../utils/paths.js';"
+        },
+        {
+          "before": "join(home, '.dsh-tui', 'sessions')",
+          "after": "join(DATA_DIR, 'sessions')"
+        }
+      ]
+    },
+    {
+      "package": "@deepseek-harness-tui/dsh-tui",
+      "version": "0.15.0",
+      "path": "lib/types/update.js",
+      "sha256": "9cd0478f55ef58b5002bf88d902bf0e97af2b6db109a038c539205123ab52ac5",
+      "replacements": [
+        {
+          "before": "const PACKAGE_NAME =",
+          "after": "export const DEVNEYA_UPDATE_MESSAGE = 'This devneya build is updated as a whole.\\nDownload a release from https://github.com/Devneya/tui/releases';\nfunction guardManagedUpdate() {\n    if (process.env.DEVNEYA_MANAGED_BUILD === '1') throw new Error(DEVNEYA_UPDATE_MESSAGE);\n}\nconst PACKAGE_NAME ="
+        },
+        {
+          "before": "async function fetchLatestVersion(registryBase) {",
+          "after": "async function fetchLatestVersion(registryBase) {\n    guardManagedUpdate();"
+        },
+        {
+          "before": "export async function fetchGithubLatestRelease(options = {}) {",
+          "after": "export async function fetchGithubLatestRelease(options = {}) {\n    guardManagedUpdate();"
+        },
+        {
+          "before": "export async function downloadAndReplaceStandaloneBinary(downloadUrl, onProgress, checksumUrl, options = {}) {",
+          "after": "export async function downloadAndReplaceStandaloneBinary(downloadUrl, onProgress, checksumUrl, options = {}) {\n    guardManagedUpdate();"
+        },
+        {
+          "before": "export async function resolveTuiUpdateTarget() {",
+          "after": "export async function resolveTuiUpdateTarget() {\n    guardManagedUpdate();"
+        },
+        {
+          "before": "export function ensureProfileAllowBuilds(profile) {",
+          "after": "export function ensureProfileAllowBuilds(profile) {\n    guardManagedUpdate();"
+        },
+        {
+          "before": "export function ensureWorkspaceAllowBuilds(yamlPath) {",
+          "after": "export function ensureWorkspaceAllowBuilds(yamlPath) {\n    guardManagedUpdate();"
+        },
+        {
+          "before": "export function ensureProfileReleaseAgeExclude(profile, version, alsoExempt) {",
+          "after": "export function ensureProfileReleaseAgeExclude(profile, version, alsoExempt) {\n    guardManagedUpdate();"
+        },
+        {
+          "before": "export function ensureWorkspaceStoreDir(yamlPath) {",
+          "after": "export function ensureWorkspaceStoreDir(yamlPath) {\n    guardManagedUpdate();"
+        },
+        {
+          "before": "export function ensureProfileSharpPlatformFilter(profile) {",
+          "after": "export function ensureProfileSharpPlatformFilter(profile) {\n    guardManagedUpdate();"
+        },
+        {
+          "before": "export function removeStalePackageInstall(profile) {",
+          "after": "export function removeStalePackageInstall(profile) {\n    guardManagedUpdate();"
+        },
+        {
+          "before": "export function migrateGlobalLauncher() {",
+          "after": "export function migrateGlobalLauncher() {\n    guardManagedUpdate();"
+        },
+        {
+          "before": "export async function updateTui(profile, targetVersion) {",
+          "after": "export async function updateTui(profile, targetVersion) {\n    guardManagedUpdate();"
+        },
+        {
+          "before": "export async function cliUpdate(profile) {",
+          "after": "export async function cliUpdate(profile) {\n    guardManagedUpdate();"
+        },
+        {
+          "before": "supervision = {}) {",
+          "after": "supervision = {}) {\n    guardManagedUpdate();"
+        },
+        {
+          "before": "export async function checkForTuiUpdate() {",
+          "after": "export async function checkForTuiUpdate() {\n    if (process.env.DEVNEYA_MANAGED_BUILD === '1') return undefined;"
+        }
+      ]
+    },
+    {
+      "package": "@deepseek-harness-tui/dsh-tui",
+      "version": "0.15.0",
+      "path": "lib/types/dsh-adapter/plugin.js",
+      "sha256": "593a9f5e380ac5a5a90e34a8e8d4aaab1c25bfee1c603cac261712012ab313aa",
+      "replacements": [
+        {
+          "before": "onUpdate: profile === undefined ? undefined : () => {",
+          "after": "onUpdate: profile === undefined ? undefined : () => {\n            if (process.env.DEVNEYA_MANAGED_BUILD === '1') {\n                notifyChannel('This devneya build is updated as a whole.\\nDownload a release from https://github.com/Devneya/tui/releases');\n                return;\n            }"
+        },
+        {
+          "before": "onResolveSdkInstall: installSurfaceFor,",
+          "after": "onResolveSdkInstall: process.env.DEVNEYA_MANAGED_BUILD === '1' ? undefined : installSurfaceFor,"
+        }
+      ]
+    },
+    {
+      "package": "@deepseek-harness-tui/dsh-tui",
+      "version": "0.15.0",
+      "path": "cordis.patch.yml",
+      "sha256": "a1a667c7dc39776aa33f7446c1179c94aaaee7ec57f845c422667176c2a80014",
+      "replacements": [
+        {
+          "before": "process.platform === 'win32' ? 'danger-full-access' : (process.env.DSH_PERMISSION_MODE ?? 'workspace-write')",
+          "after": "process.env.DSH_PERMISSION_MODE ?? 'workspace-write'"
+        },
+        {
+          "before": "process.platform === 'win32' ? 'never' : ((process.env.DSH_PERMISSION_MODE ?? 'workspace-write') === 'danger-full-access' ? 'never' : 'ask')",
+          "after": "(process.env.DSH_PERMISSION_MODE ?? 'workspace-write') === 'danger-full-access' ? 'never' : 'ask'"
+        }
+      ]
+    },
+    {
+      "package": "@deepseek-ai/dsh-plugin-manager",
+      "version": "0.2.0-rc.2",
+      "path": "lib/index.js",
+      "sha256": "f46a48b3422927eea5605a70b78502e06ef9ceaa29d7a73f4a7f742361ff51c8",
+      "replacements": [
+        {
+          "before": "async function runProfilePnpm(context, args, options) {",
+          "after": "async function runProfilePnpm(context, args, options) {\n\tif (process.env.DEVNEYA_MANAGED_BUILD === '1') {\n\t\tconst output = 'Application components are supplied through devneya releases.\\nThis devneya build is updated as a whole.\\nDownload a release from https://github.com/Devneya/tui/releases';\n\t\toptions?.onOutput?.(output, 'stderr');\n\t\treturn { exitCode: 1, output, truncated: false, logPath: '' };\n\t}"
+        }
+      ]
+    },
+    {
+      "package": "@deepseek-ai/dsh-plugin-manager",
+      "version": "0.2.0-rc.2",
+      "path": "lib/types/operations.js",
+      "sha256": "bf511a06b6ff2d7aab1f7725fcc80f304eb32a9541790e22cd28f8a9617b2c68",
+      "replacements": [
+        {
+          "before": "export async function runProfilePnpm(context, args, options) {",
+          "after": "export async function runProfilePnpm(context, args, options) {\n    if (process.env.DEVNEYA_MANAGED_BUILD === '1') {\n        const output = 'Application components are supplied through devneya releases.\\nThis devneya build is updated as a whole.\\nDownload a release from https://github.com/Devneya/tui/releases';\n        options?.onOutput?.(output, 'stderr');\n        return { exitCode: 1, output, truncated: false, logPath: '' };\n    }"
+        }
+      ]
+    },
+    {
+      "package": "@deepseek-harness-tui/dsh-tui",
+      "version": "0.15.0",
+      "path": "node_modules/@dsh-std/command/package.json",
+      "sha256": "eb424620a3548a455eff729017d9b95324512562ab9cb906422bf7dd4d6c901b",
+      "replacements": [
+        {
+          "before": "\"@dsh-std/core\": \"workspace:*\"",
+          "after": "\"@dsh-std/core\": \"0.1.0\""
+        },
+        {
+          "before": "\"@dsh-std/manifest\": \"workspace:*\"",
+          "after": "\"@dsh-std/manifest\": \"0.1.0\""
+        },
+        {
+          "before": "\"@dsh-std/connection\": \"workspace:*\"",
+          "after": "\"@dsh-std/connection\": \"0.1.0\""
+        },
+        {
+          "before": "\"@dsh-std/presentation\": \"workspace:*\"",
+          "after": "\"@dsh-std/presentation\": \"0.1.0\""
+        }
+      ]
+    },
+    {
+      "package": "@deepseek-harness-tui/dsh-tui",
+      "version": "0.15.0",
+      "path": "node_modules/@dsh-std/connection/package.json",
+      "sha256": "46667ce5fd6a5c0fb40559c6907b1ca2f4d959bf7af8da117b91ef1e72c78e2e",
+      "replacements": [
+        {
+          "before": "\"@dsh-std/core\": \"workspace:*\"",
+          "after": "\"@dsh-std/core\": \"0.1.0\""
+        }
+      ]
+    },
+    {
+      "package": "@deepseek-harness-tui/dsh-tui",
+      "version": "0.15.0",
+      "path": "node_modules/@dsh-std/manifest/package.json",
+      "sha256": "b65f376f7079576effdc93d590024a2160f83cb3af3f6131b53d8571d3f41e16",
+      "replacements": [
+        {
+          "before": "\"@dsh-std/core\": \"workspace:*\"",
+          "after": "\"@dsh-std/core\": \"0.1.0\""
+        }
+      ]
+    },
+    {
+      "package": "@deepseek-harness-tui/dsh-tui",
+      "version": "0.15.0",
+      "path": "node_modules/@dsh-std/messages/package.json",
+      "sha256": "53bcba82da3b6c636a1a57f2f23ac5a8cbe12bbb0ec7891dd0c98155f29324f0",
+      "replacements": [
+        {
+          "before": "\"@dsh-std/core\": \"workspace:*\"",
+          "after": "\"@dsh-std/core\": \"0.1.0\""
+        }
+      ]
+    },
+    {
+      "package": "@deepseek-harness-tui/dsh-tui",
+      "version": "0.15.0",
+      "path": "node_modules/@dsh-std/presentation/package.json",
+      "sha256": "e5f2ec2d07fce0129530c5343e4a5c2d7d0d58a790b969ad7db82365a76abe90",
+      "replacements": [
+        {
+          "before": "\"@dsh-std/core\": \"workspace:*\"",
+          "after": "\"@dsh-std/core\": \"0.1.0\""
+        },
+        {
+          "before": "\"@dsh-std/connection\": \"workspace:*\"",
+          "after": "\"@dsh-std/connection\": \"0.1.0\""
+        }
+      ]
+    },
+    {
+      "package": "@deepseek-harness-tui/dsh-tui",
+      "version": "0.15.0",
+      "path": "node_modules/@dsh-std/storage/package.json",
+      "sha256": "fed39dc4ce58cc059d993855919ded648fa88e1902b3771210c7075ac890a27c",
+      "replacements": [
+        {
+          "before": "\"@dsh-std/core\": \"workspace:*\"",
+          "after": "\"@dsh-std/core\": \"0.1.0\""
+        }
+      ]
+    },
+    {
+      "package": "@deepseek-ai/dsh-app-boot",
+      "version": "0.2.0-rc.2",
+      "path": "lib/index.js",
+      "sha256": "234db45e1b3f8c683b5bc1f551948b2a2ec52a6468c7b6937725a23f1c0e0d96",
+      "replacements": [
+        {
+          "before": "const requiredStartupEntryIds = new Set([",
+          "after": "const requiredStartupEntryIds = new Set([\n\t...(process.env.DEVNEYA_MANAGED_BUILD === \"1\" ? [\"dsh-tui\", \"working-activity\"] : []),"
+        },
+        {
+          "before": "async function auditStartupEntries(ctx, binName, warn = (line) => void process.stderr.write(line)) {",
+          "after": "async function auditStartupEntries(ctx, binName, warn = (line) => void process.stderr.write(line)) {\n    if (process.env.DEVNEYA_MANAGED_BUILD === \"1\") {\n        const entries = [...ctx.loader.entries()];\n        for (const id of [\"dsh-tui\", \"working-activity\"]) {\n            const entry = entries.find(item => item.options.id === id);\n            if (entry === undefined || entry.disabled) throw new Error(`devneya: mandatory application component ${id} is missing or disabled`);\n        }\n    }"
+        }
+      ]
+    },
+    {
+      "package": "dsh-working-activity",
+      "version": "0.5.1",
+      "path": "lib/types/lang.js",
+      "sha256": "a88680ed2b2f16d6b502ed926f73f067a773e09e85df49964234ca34b5512098",
+      "replacements": [
+        {
+          "before": "const LANG_FILE = join(homedir(), '.dsh-tui', 'lang.json');",
+          "after": "const LANG_FILE = join(process.env.DEVNEYA_TUI_HOME || join(homedir(), '.dsh-tui'), 'lang.json');"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "name": "devneya-acceptance",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {"node": "24.22.0"},
+  "packageManager": "npm@11.19.1",
+  "dependencies": {"node-pty": "1.1.0"},
+  "allowScripts": {"node-pty@1.1.0": true}
+}

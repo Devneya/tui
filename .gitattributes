@@ -1,0 +1,5 @@
+* text=auto eol=lf
+# These are verbatim upstream bytes checked against origins.json on every OS.
+third_party/** -text -whitespace
+# Unified context preserves upstream whitespace for review and preimage checks.
+patches/*.diff -whitespace

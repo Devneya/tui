@@ -1,0 +1,12 @@
+.build/
+artifacts/
+dist/
+node_modules/
+__pycache__/
+*.pyc
+internal/payload/generated/
+release-assets/
+release-input/
+source-input/
+windows-qualification/
+release-notes.md

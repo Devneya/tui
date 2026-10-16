@@ -1,0 +1,92 @@
+name: Release
+on:
+  push:
+    tags: ['v[0-9]*.[0-9]*.[0-9]*']
+permissions:
+  contents: read
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  validate:
+    runs-on: ubuntu-22.04
+    outputs:
+      source: ${{ steps.tag.outputs.source }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - id: tag
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: python3 scripts/validate_tag.py
+  build:
+    needs: validate
+    uses: ./.github/workflows/build.yml
+    with:
+      source: ${{ needs.validate.outputs.source }}
+  publish:
+    needs: [validate, build]
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+      actions: read
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.validate.outputs.source }}
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: accepted-linux-x64
+          path: release-input/accepted-linux-x64
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: accepted-linux-arm64
+          path: release-input/accepted-linux-arm64
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: accepted-darwin-arm64
+          path: release-input/accepted-darwin-arm64
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: accepted-darwin-x64
+          path: release-input/accepted-darwin-x64
+      - if: needs.build.outputs.windowsQualified == 'true'
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: accepted-windows-x64
+          path: release-input/accepted-windows-x64
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: qualification-windows-x64
+          path: windows-qualification
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: native-sources
+          path: source-input
+      - name: Validate receipts and assemble complete asset set
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+          RELEASE_SOURCE: ${{ needs.validate.outputs.source }}
+          WINDOWS_QUALIFIED: ${{ needs.build.outputs.windowsQualified }}
+        run: python3 scripts/assemble_release.py
+      - id: provenance
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: release-assets/devneya-*
+      - name: Include signed provenance and final checksums
+        env:
+          PROVENANCE_BUNDLE: ${{ steps.provenance.outputs.bundle-path }}
+        run: |
+          cp "$PROVENANCE_BUNDLE" release-assets/provenance.sigstore.json
+          python3 scripts/checksums.py release-assets
+      - name: Assemble draft, verify uploaded digests, then publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: python3 scripts/publish_release.py

@@ -1,0 +1,351 @@
+--- a/@deepseek-harness-tui/dsh-tui/lib/types/utils/paths.js
++++ b/@deepseek-harness-tui/dsh-tui/lib/types/utils/paths.js
+@@ -16,4 +16,4 @@
+     return homedir() || process.env.USERPROFILE || process.env.HOME || '';
+ }
+ /** Data directory all preferences/history live in (`~/.dsh-tui`). */
+-export const DATA_DIR = join(homeDir(), '.dsh-tui');
++export const DATA_DIR = process.env.DEVNEYA_TUI_HOME || join(homeDir(), '.dsh-tui');
+--- a/@deepseek-harness-tui/dsh-tui/lib/types/dsh-adapter/channel/reports.js
++++ b/@deepseek-harness-tui/dsh-tui/lib/types/dsh-adapter/channel/reports.js
+@@ -4,7 +4,7 @@
+ import { fetchBalance } from '../../deepseekBalance.js';
+ import { t } from '../../i18n.js';
+ import { credentialRefDeclared, dshHomeDir } from '../../utils/credentials.js';
+-import { homeDir } from '../../utils/paths.js';
++import { homeDir, DATA_DIR } from '../../utils/paths.js';
+ import { sessionsRoots } from '../compat/index.js';
+ import { snapshotLiveSessionEvents } from '../compat/liveSession.js';
+ import { getHostGrantStore } from '../host-grants.js';
+@@ -146,7 +146,7 @@
+         // The profile patch hangs off `$DSH_HOME ?? ~/.dsh` plus the launcher's own
+         // profile name; a hardcoded `~/.dsh` named a different file whenever
+         // `DSH_HOME` was set. The two doctors must not diverge.
+-        const legacyConfig = join(homeDir(), '.dsh-tui/cordis.yml');
++        const legacyConfig = join(DATA_DIR, 'cordis.yml');
+         if (existsSync(legacyConfig))
+             lines.push(t('doctor-config', { candidate: legacyConfig, state: '✓' }));
+         const profileConfig = join(dshHomeDir(), 'profiles', 'dsh-tui', 'cordis.patch.yml');
+--- a/@deepseek-harness-tui/dsh-tui/lib/types/dsh-adapter/compat/sessionLog.js
++++ b/@deepseek-harness-tui/dsh-tui/lib/types/dsh-adapter/compat/sessionLog.js
+@@ -2,7 +2,7 @@
+ import { appendFileSync, closeSync, existsSync, openSync, readdirSync, readFileSync, readSync, realpathSync, rmSync, } from 'node:fs';
+ import { dirname, join, sep } from 'node:path';
+ import { zstdCompressSync, zstdDecompressSync } from 'node:zlib';
+-import { homeDir } from '../../utils/paths.js';
++import { homeDir, DATA_DIR } from '../../utils/paths.js';
+ /**
+  * Legacy third-party session-event types the TUI vouches for as ephemeral
+  * UI frames — safe for the strict read path to accept and skip. Exported
+@@ -36,7 +36,7 @@
+         roots.push(override);
+     const dshHome = process.env.DSH_HOME;
+     roots.push(join(dshHome !== undefined && dshHome.trim().length > 0 ? dshHome : join(home, '.dsh'), 'sessions'));
+-    roots.push(join(home, '.dsh-tui', 'sessions'));
++    roots.push(join(DATA_DIR, 'sessions'));
+     return [...new Set(roots)];
+ }
+ /**
+--- a/@deepseek-harness-tui/dsh-tui/lib/types/update.js
++++ b/@deepseek-harness-tui/dsh-tui/lib/types/update.js
+@@ -22,6 +22,10 @@
+ // the compiled copy at lib/types/utils/shellQuote.js.
+ export { shellQuote };
+ export { detachHandoffStdin };
++export const DEVNEYA_UPDATE_MESSAGE = 'This devneya build is updated as a whole.\nDownload a release from https://github.com/Devneya/tui/releases';
++function guardManagedUpdate() {
++    if (process.env.DEVNEYA_MANAGED_BUILD === '1') throw new Error(DEVNEYA_UPDATE_MESSAGE);
++}
+ const PACKAGE_NAME = '@deepseek-harness-tui/dsh-tui';
+ const DEFAULT_REGISTRY = 'https://registry.npmjs.org';
+ const GITHUB_REPO = 'ccch1mneyyy/dsh-TUI';
+@@ -297,6 +301,7 @@
+ }
+ /** Fetch `latest` from a registry; undefined on any failure. */
+ async function fetchLatestVersion(registryBase) {
++    guardManagedUpdate();
+     const controller = new AbortController();
+     const timeout = setTimeout(() => controller.abort(), UPDATE_CHECK_TIMEOUT_MS);
+     try {
+@@ -424,6 +429,7 @@
+  *   failure.
+  */
+ export async function fetchGithubLatestRelease(options = {}) {
++    guardManagedUpdate();
+     const doFetch = options.fetchImpl ?? fetch;
+     const controller = new AbortController();
+     const timeout = setTimeout(() => controller.abort(), UPDATE_CHECK_TIMEOUT_MS);
+@@ -690,6 +696,7 @@
+  * @returns Object indicating success or an error message on failure.
+  */
+ export async function downloadAndReplaceStandaloneBinary(downloadUrl, onProgress, checksumUrl, options = {}) {
++    guardManagedUpdate();
+     const maxAssetBytes = options.maxAssetBytes ?? MAX_ASSET_BYTES;
+     const tempDir = join(process.env.DSH_TUI_STANDALONE_CACHE ?? join(homedir(), '.cache', 'dsh-tui-standalone'), `.update-${Date.now()}-${process.pid}`);
+     try {
+@@ -875,6 +882,7 @@
+  * upgrading to yesterday's version.
+  */
+ export async function resolveTuiUpdateTarget() {
++    guardManagedUpdate();
+     const current = installedTuiVersion();
+     const currentVersion = current === undefined ? null : valid(current);
+     if (currentVersion === null)
+@@ -919,6 +927,7 @@
+  * or blocks the interactive TUI.
+  */
+ export async function checkForTuiUpdate() {
++    if (process.env.DEVNEYA_MANAGED_BUILD === '1') return undefined;
+     // Callers start this during the first render; the first `fetch()` loads
+     // undici synchronously, so yield first and let that cost land after the frame.
+     await new Promise(resolve => setImmediate(resolve));
+@@ -1021,11 +1030,13 @@
+  * ERR_PNPM_IGNORED_BUILDS diagnostic stays the visible fallback.
+  */
+ export function ensureProfileAllowBuilds(profile) {
++    guardManagedUpdate();
+     return ensureWorkspaceAllowBuilds(profileWorkspaceYamlPath(profile));
+ }
+ /** Path-based core of {@link ensureProfileAllowBuilds} for callers that hold
+  *  the profile directory itself (the Claude SDK installer's heal pass). */
+ export function ensureWorkspaceAllowBuilds(yamlPath) {
++    guardManagedUpdate();
+     try {
+         if (!existsSafe(dirname(yamlPath)))
+             return undefined;
+@@ -1121,6 +1132,7 @@
+  *   pre-update `updatedFrom`; ignored when empty or equal to `version`.
+  */
+ export function ensureProfileReleaseAgeExclude(profile, version, alsoExempt) {
++    guardManagedUpdate();
+     const yamlPath = profileWorkspaceYamlPath(profile);
+     try {
+         if (!existsSafe(dirname(yamlPath)))
+@@ -1217,6 +1229,7 @@
+  * store-mismatch self-heal catches what a failed pin leaves behind.
+  */
+ export function ensureWorkspaceStoreDir(yamlPath) {
++    guardManagedUpdate();
+     try {
+         if (!existsSafe(dirname(yamlPath)))
+             return undefined;
+@@ -1376,6 +1389,7 @@
+  * next update there.
+  */
+ export function ensureProfileSharpPlatformFilter(profile) {
++    guardManagedUpdate();
+     const yamlPath = profileWorkspaceYamlPath(profile);
+     try {
+         if (!existsSafe(dirname(yamlPath)))
+@@ -1489,6 +1503,7 @@
+  * the rerun and the manual repair hint.
+  */
+ export function removeStalePackageInstall(profile) {
++    guardManagedUpdate();
+     const pkgDir = profilePackageDir(profile);
+     const scopeDir = dirname(pkgDir);
+     const removal = { packageDir: 'absent', tmpDirs: [] };
+@@ -1542,6 +1557,7 @@
+  * @returns true when the global launcher files were replaced.
+  */
+ export function migrateGlobalLauncher() {
++    guardManagedUpdate();
+     const launcherBin = process.argv[1];
+     if (launcherBin === undefined || !launcherBin.endsWith('dsh-tui.js'))
+         return false;
+@@ -1600,6 +1616,7 @@
+  * @returns The update exit code plus the before/after versions.
+  */
+ export async function updateTui(profile, targetVersion) {
++    guardManagedUpdate();
+     // Stamp the pre-update version BEFORE pnpm runs: it reads this package's
+     // manifest from disk, which the update replaces on the fly — a
+     // post-update read already sees the NEW version, and the restarted
+@@ -1753,6 +1770,7 @@
+ export async function updateTuiAndRestart(sessionId, profile, targetVersion, kernel, 
+ /** The standalone entry's supervision hooks (TuiRestartOptions.onSpawn / onTerminationSignal). */
+ supervision = {}) {
++    guardManagedUpdate();
+     const outcome = await updateTui(profile, targetVersion);
+     const { updatedFrom } = outcome;
+     if (outcome.code !== 0)
+@@ -1782,6 +1800,7 @@
+  * @returns Process exit code: 0 on success or already-latest, 1 otherwise.
+  */
+ export async function cliUpdate(profile) {
++    guardManagedUpdate();
+     const target = await resolveTuiUpdateTarget();
+     if (target.kind === 'latest') {
+         process.stdout.write(`dsh-tui: already the latest version (${target.current}).\n`);
+--- a/@deepseek-harness-tui/dsh-tui/lib/types/dsh-adapter/plugin.js
++++ b/@deepseek-harness-tui/dsh-tui/lib/types/dsh-adapter/plugin.js
+@@ -2260,12 +2260,16 @@
+         // The kernel picker's SDK install wizard (a dim row's Enter): the surface of
+         // whichever row the user picked, looked up by id — the manifest says what to
+         // install and with which executor, this host holds the actions.
+-        onResolveSdkInstall: installSurfaceFor,
++        onResolveSdkInstall: process.env.DEVNEYA_MANAGED_BUILD === '1' ? undefined : installSurfaceFor,
+         kernelPinned: backendPinned,
+         // Only a `dsh --profile <name>` launch has a profile installation for
+         // `/update` to act on; source checkouts and `--config` overlays get the
+         // unavailable notice instead.
+         onUpdate: profile === undefined ? undefined : () => {
++            if (process.env.DEVNEYA_MANAGED_BUILD === '1') {
++                notifyChannel('This devneya build is updated as a whole.\nDownload a release from https://github.com/Devneya/tui/releases');
++                return;
++            }
+             if (exited || updateRequested)
+                 return;
+             // Confirm the target version before tearing the TUI down: on an
+--- a/@deepseek-harness-tui/dsh-tui/cordis.patch.yml
++++ b/@deepseek-harness-tui/dsh-tui/cordis.patch.yml
+@@ -176,14 +176,14 @@
+ # (~/.dsh-tui/permission.json) outranks it whenever it is not set.
+ - id: sandbox-policy
+   config:
+-    mode: !!js "process.platform === 'win32' ? 'danger-full-access' : (process.env.DSH_PERMISSION_MODE ?? 'workspace-write')"
++    mode: !!js "process.env.DSH_PERMISSION_MODE ?? 'workspace-write'"
+     workspaceRoot: !!js process.cwd()
+ 
+ # On Windows, skip approval prompts (no sandbox = the user's terminal trust
+ # model, matching every other terminal coding agent).
+ - id: approval
+   config:
+-    policy: !!js "process.platform === 'win32' ? 'never' : ((process.env.DSH_PERMISSION_MODE ?? 'workspace-write') === 'danger-full-access' ? 'never' : 'ask')"
++    policy: !!js "(process.env.DSH_PERMISSION_MODE ?? 'workspace-write') === 'danger-full-access' ? 'never' : 'ask'"
+ 
+ # Sessions live in the shared JSONL store (~/.dsh/sessions) — the same
+ # backend dsh web writes — so /resume here and the web session list see each
+--- a/@deepseek-ai/dsh-plugin-manager/lib/index.js
++++ b/@deepseek-ai/dsh-plugin-manager/lib/index.js
+@@ -436,6 +436,11 @@
+ * A compatibility denial returns exit code 1. Service output is bounded; CLI output uses inherited descriptors.
+ */
+ async function runProfilePnpm(context, args, options) {
++	if (process.env.DEVNEYA_MANAGED_BUILD === '1') {
++		const output = 'Application components are supplied through devneya releases.\nThis devneya build is updated as a whole.\nDownload a release from https://github.com/Devneya/tui/releases';
++		options?.onOutput?.(output, 'stderr');
++		return { exitCode: 1, output, truncated: false, logPath: '' };
++	}
+ 	const dir = context.dir ?? resolveProfileDir(context.profile, context.home);
+ 	const active = await activeRecordedRun(dir);
+ 	const logRoot = join(dir, ".plugin-manager", "logs");
+--- a/@deepseek-ai/dsh-plugin-manager/lib/types/operations.js
++++ b/@deepseek-ai/dsh-plugin-manager/lib/types/operations.js
+@@ -244,6 +244,11 @@
+  * A compatibility denial returns exit code 1. Service output is bounded; CLI output uses inherited descriptors.
+  */
+ export async function runProfilePnpm(context, args, options) {
++    if (process.env.DEVNEYA_MANAGED_BUILD === '1') {
++        const output = 'Application components are supplied through devneya releases.\nThis devneya build is updated as a whole.\nDownload a release from https://github.com/Devneya/tui/releases';
++        options?.onOutput?.(output, 'stderr');
++        return { exitCode: 1, output, truncated: false, logPath: '' };
++    }
+     const dir = context.dir ?? resolveProfileDir(context.profile, context.home);
+     // Before any profile file is read: a recorded run that is still active may be rewriting them.
+     const active = await activeRecordedRun(dir);
+--- a/@deepseek-harness-tui/dsh-tui/node_modules/@dsh-std/command/package.json
++++ b/@deepseek-harness-tui/dsh-tui/node_modules/@dsh-std/command/package.json
+@@ -13,10 +13,10 @@
+     "test": "vitest run --passWithNoTests"
+   },
+   "dependencies": {
+-    "@dsh-std/core": "workspace:*",
+-    "@dsh-std/manifest": "workspace:*",
+-    "@dsh-std/connection": "workspace:*",
+-    "@dsh-std/presentation": "workspace:*"
++    "@dsh-std/core": "0.1.0",
++    "@dsh-std/manifest": "0.1.0",
++    "@dsh-std/connection": "0.1.0",
++    "@dsh-std/presentation": "0.1.0"
+   },
+   "engines": { "node": "^22.19 || >=24" }
+ }
+--- a/@deepseek-harness-tui/dsh-tui/node_modules/@dsh-std/connection/package.json
++++ b/@deepseek-harness-tui/dsh-tui/node_modules/@dsh-std/connection/package.json
+@@ -15,6 +15,6 @@
+     "typecheck": "tsc -p tsconfig.json --noEmit",
+     "test": "vitest run"
+   },
+-  "dependencies": { "@dsh-std/core": "workspace:*" },
++  "dependencies": { "@dsh-std/core": "0.1.0" },
+   "engines": { "node": "^22.19 || >=24" }
+ }
+--- a/@deepseek-harness-tui/dsh-tui/node_modules/@dsh-std/manifest/package.json
++++ b/@deepseek-harness-tui/dsh-tui/node_modules/@dsh-std/manifest/package.json
+@@ -15,6 +15,6 @@
+     "typecheck": "tsc -p tsconfig.json --noEmit",
+     "test": "vitest run"
+   },
+-  "dependencies": { "@dsh-std/core": "workspace:*" },
++  "dependencies": { "@dsh-std/core": "0.1.0" },
+   "engines": { "node": "^22.19 || >=24" }
+ }
+--- a/@deepseek-harness-tui/dsh-tui/node_modules/@dsh-std/messages/package.json
++++ b/@deepseek-harness-tui/dsh-tui/node_modules/@dsh-std/messages/package.json
+@@ -15,6 +15,6 @@
+     "typecheck": "tsc -p tsconfig.json --noEmit",
+     "test": "vitest run --passWithNoTests"
+   },
+-  "dependencies": { "@dsh-std/core": "workspace:*" },
++  "dependencies": { "@dsh-std/core": "0.1.0" },
+   "engines": { "node": "^22.19 || >=24" }
+ }
+--- a/@deepseek-harness-tui/dsh-tui/node_modules/@dsh-std/presentation/package.json
++++ b/@deepseek-harness-tui/dsh-tui/node_modules/@dsh-std/presentation/package.json
+@@ -18,8 +18,8 @@
+     "test": "vitest run --passWithNoTests"
+   },
+   "dependencies": {
+-    "@dsh-std/core": "workspace:*",
+-    "@dsh-std/connection": "workspace:*"
++    "@dsh-std/core": "0.1.0",
++    "@dsh-std/connection": "0.1.0"
+   },
+   "engines": { "node": "^22.19 || >=24" }
+ }
+--- a/@deepseek-harness-tui/dsh-tui/node_modules/@dsh-std/storage/package.json
++++ b/@deepseek-harness-tui/dsh-tui/node_modules/@dsh-std/storage/package.json
+@@ -15,6 +15,6 @@
+     "typecheck": "tsc -p tsconfig.json --noEmit",
+     "test": "vitest run --passWithNoTests"
+   },
+-  "dependencies": { "@dsh-std/core": "workspace:*" },
++  "dependencies": { "@dsh-std/core": "0.1.0" },
+   "engines": { "node": "^22.19 || >=24" }
+ }
+--- a/@deepseek-ai/dsh-app-boot/lib/index.js
++++ b/@deepseek-ai/dsh-app-boot/lib/index.js
+@@ -3834,6 +3834,7 @@
+ * shared Agent execution, application endpoints, and Web bootstrap/transport.
+ */
+ const requiredStartupEntryIds = new Set([
++	...(process.env.DEVNEYA_MANAGED_BUILD === "1" ? ["dsh-tui", "working-activity"] : []),
+ 	"agent-loop",
+ 	"webserver",
+ 	"modules",
+@@ -4007,6 +4008,13 @@
+ * its message includes optional failures too.
+ */
+ async function auditStartupEntries(ctx, binName, warn = (line) => void process.stderr.write(line)) {
++    if (process.env.DEVNEYA_MANAGED_BUILD === "1") {
++        const entries = [...ctx.loader.entries()];
++        for (const id of ["dsh-tui", "working-activity"]) {
++            const entry = entries.find(item => item.options.id === id);
++            if (entry === undefined || entry.disabled) throw new Error(`devneya: mandatory application component ${id} is missing or disabled`);
++        }
++    }
+ 	const failures = await inactiveEntries(ctx);
+ 	const required = new Set(failures.filter(({ entry }) => entry === bootstrapIncludes.get(ctx) || requiredStartupEntryIds.has(entry.options.id)).map(({ entry }) => entry));
+ 	if (required.size > 0) throw new StartupError(startupDiagnostic(binName, failures, required), failures.map(({ entry, outcome }) => ({
+--- a/dsh-working-activity/lib/types/lang.js
++++ b/dsh-working-activity/lib/types/lang.js
+@@ -28,7 +28,7 @@
+ /** The languages shipped with the plugin, in display order. */
+ export const LANGS = ['zh', 'en'];
+ /** The dsh-tui prefs file this plugin mirrors (shared language contract). */
+-const LANG_FILE = join(homedir(), '.dsh-tui', 'lang.json');
++const LANG_FILE = join(process.env.DEVNEYA_TUI_HOME || join(homedir(), '.dsh-tui'), 'lang.json');
+ const dict = {
+     // ── ⏵ self-narration contract (system prompt, /lang aware) ──────────
+     'narrate-instruction': {

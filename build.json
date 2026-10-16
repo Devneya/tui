@@ -1,0 +1,43 @@
+{
+  "product": "devneya",
+  "version": "0.1.0",
+  "repository": "Devneya/tui",
+  "node": "24.22.0",
+  "go": "1.27.2",
+  "dsh": "0.2.0-rc.2",
+  "tui": "0.15.0",
+  "tuiSource": "18e4a206afc367f055a2b3379bb221abcbb5d99e",
+  "dshSource": "639ed015397290b3745d163aafe02ffee4aa3f84",
+  "npm": "11.19.1",
+  "python": "3.14.4",
+  "payloadFormatVersion": 1,
+  "defaultLanguage": "en",
+  "targets": {
+    "linux-x64": {
+      "runner": "ubuntu-22.04",
+      "baseline": "Ubuntu 22.04; glibc 2.35",
+      "required": true
+    },
+    "linux-arm64": {
+      "runner": "ubuntu-22.04-arm",
+      "baseline": "Ubuntu 22.04; glibc 2.35",
+      "required": true
+    },
+    "darwin-arm64": {
+      "runner": "macos-15",
+      "baseline": "macOS 15",
+      "required": true
+    },
+    "darwin-x64": {
+      "runner": "macos-15-intel",
+      "baseline": "macOS 15",
+      "required": true
+    },
+    "windows-x64": {
+      "runner": "windows-2025",
+      "baseline": "Windows Server 2025; preview; requires standard-user qualification",
+      "required": false
+    }
+  },
+  "linuxAcceptanceImage": "docker.io/library/ubuntu@sha256:08ea48a03a3e78ebc7cd526e6a275053223aadd88bfc09cc49b06d5281525fde"
+}
