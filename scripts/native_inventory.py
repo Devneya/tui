@@ -147,4 +147,12 @@ def inventory(root, target):
 
 if __name__=='__main__':
     p=argparse.ArgumentParser();p.add_argument('root',type=Path);p.add_argument('--target',required=True);p.add_argument('--output',type=Path,required=True)
-    a=p.parse_args();result=inventory(a.root,a.target);a.output.parent.mkdir(parents=True,exist_ok=True);a.output.write_text(json.dumps(result,indent=2)+'\n')
+    a=p.parse_args();a.output.parent.mkdir(parents=True,exist_ok=True)
+    failure=a.output.with_name(a.output.stem+'-failure.json')
+    failure.unlink(missing_ok=True)
+    try:
+        result=inventory(a.root,a.target)
+    except ValueError as error:
+        failure.write_text(json.dumps({'schemaVersion':1,'target':a.target,'check':'native-library-inventory','reason':str(error)},indent=2)+'\n',encoding='utf-8')
+        raise
+    a.output.write_text(json.dumps(result,indent=2)+'\n',encoding='utf-8')

@@ -39,7 +39,7 @@ class NativeInventory(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             (root/'node.exe').write_bytes(pe_fixture())
-            with self.assertRaisesRegex(ValueError, 'Unbundled non-OS library vcruntime140.dll'):
+            with self.assertRaisesRegex(ValueError, r'Unbundled libraries.*node\.exe: vcruntime140\.dll'):
                 inventory(root, 'windows-x64')
 
     def test_truncated_or_invalid_pe_fails_instead_of_claiming_qualification(self):
